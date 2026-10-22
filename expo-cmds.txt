@@ -1,1 +1,2 @@
+cd my-app
 npx expo start --tunnel
