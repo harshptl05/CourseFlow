@@ -24,6 +24,37 @@ const COURSES: CourseCardProps[] = [
   },
 ];
 
+interface ResourceItem {
+  id: string;
+  sourceTag: string;
+  title: string;
+  description: string;
+  dateMeta: string;
+  courseTag: string;
+}
+
+const STATISTICS_RESOURCES: ResourceItem[] = [
+  {
+    id: 'tidy-data',
+    sourceTag: 'JOURNAL OF STATISTICAL SOFTWARE · FOUNDATIONAL PAPER',
+    title: 'Tidy Data',
+    description:
+      'Wickham presents a consistent structure for analysis-ready datasets. Organizing observations, variables and observational units makes data easier to reshape, model and visualize.',
+    dateMeta: 'Sep 12, 2014 · 1 min summary',
+    courseTag: 'Relevant to STAT 3355',
+  },
+  {
+    id: 'conformal-prediction',
+    sourceTag: 'ARXIV · TUTORIAL PREPRINT',
+    title:
+      'A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification',
+    description:
+      'This tutorial introduces prediction sets and intervals that quantify uncertainty around model outputs. It combines practical theory with worked examples and Python notebooks.',
+    dateMeta: 'Jul 15, 2021 · revised Dec 7, 2022 · 1 min summary',
+    courseTag: 'Relevant to STAT 3355',
+  },
+];
+
 export default function SearchScreen() {
   const router = useRouter();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -41,8 +72,8 @@ export default function SearchScreen() {
     <View style={styles.screen}>
       {/* --- Header --- */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={handleBack} 
+        <TouchableOpacity
+          onPress={handleBack}
           style={styles.backButton}
           activeOpacity={0.7}
         >
@@ -51,21 +82,21 @@ export default function SearchScreen() {
             {selectedTopic ?? 'Explore'}
           </ThemedText>
         </TouchableOpacity>
-        
+
         <TouchableOpacity activeOpacity={0.7}>
           <Feather name="search" size={20} color={Colors.ink} />
         </TouchableOpacity>
       </View>
 
       {selectedTopic ? (
-        /* --- Topic Results View (Step 1: Controls & Filter Bar) --- */
-        <ScrollView 
+        /* --- Topic Results View --- */
+        <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
           {/* Active Search Pill */}
-          <TouchableOpacity 
-            style={styles.activeSearchPill} 
+          <TouchableOpacity
+            style={styles.activeSearchPill}
             activeOpacity={0.8}
             onPress={() => setSelectedTopic(null)}
           >
@@ -103,13 +134,59 @@ export default function SearchScreen() {
             </TouchableOpacity>
           </View>
 
-          <ThemedText type="caption" color="muted">
-            2 verified resources
+          <ThemedText type="caption" color="muted" style={styles.verifiedCount}>
+            {STATISTICS_RESOURCES.length} verified resources
           </ThemedText>
+
+          {/* Resource Cards List */}
+          <View style={styles.resourceList}>
+            {STATISTICS_RESOURCES.map((item) => (
+              <View key={item.id} style={styles.resourceCard}>
+                <ThemedText type="caption" color="muted" style={styles.sourceTag}>
+                  {item.sourceTag}
+                </ThemedText>
+
+                <ThemedText type="title" style={styles.resourceTitle}>
+                  {item.title}
+                </ThemedText>
+
+                <ThemedText
+                  type="body"
+                  color="muted"
+                  style={styles.resourceDescription}
+                >
+                  {item.description}
+                </ThemedText>
+
+                <ThemedText type="caption" color="muted" style={styles.dateMeta}>
+                  {item.dateMeta}
+                </ThemedText>
+
+                <View style={styles.resourceFooter}>
+                  <ThemedText type="caption" style={{ color: Colors.primary }}>
+                    {item.courseTag}
+                  </ThemedText>
+
+                  <View style={styles.resourceActions}>
+                    <TouchableOpacity activeOpacity={0.7}>
+                      <ThemedText type="label" style={{ color: Colors.primary }}>
+                        Save
+                      </ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity activeOpacity={0.7}>
+                      <ThemedText type="label" style={{ color: Colors.primary }}>
+                        Add
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       ) : (
         /* --- Default Explore View --- */
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
@@ -130,13 +207,15 @@ export default function SearchScreen() {
             <ThemedText type="title">Recent searches</ThemedText>
             <View style={styles.recentList}>
               {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
-                <TouchableOpacity 
-                  key={item} 
-                  style={styles.recentItem} 
+                <TouchableOpacity
+                  key={item}
+                  style={styles.recentItem}
                   activeOpacity={0.7}
                   onPress={() => setSelectedTopic(item)}
                 >
-                  <ThemedText type="label" style={{ color: Colors.primary }}>{item}</ThemedText>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    {item}
+                  </ThemedText>
                   <Feather name="arrow-right" size={16} color={Colors.primary} />
                 </TouchableOpacity>
               ))}
@@ -146,8 +225,10 @@ export default function SearchScreen() {
           {/* --- Topic Collections --- */}
           <View style={styles.section}>
             <ThemedText type="title">Topic collections</ThemedText>
-            <ThemedText type="label" style={styles.subHeading}>For your courses</ThemedText>
-            
+            <ThemedText type="label" style={styles.subHeading}>
+              For your courses
+            </ThemedText>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -162,22 +243,30 @@ export default function SearchScreen() {
           {/* --- Featured Publishers --- */}
           <View style={styles.section}>
             <ThemedText type="title">Featured publishers</ThemedText>
-            
+
             <View style={styles.publisherGrid}>
               <View style={styles.pubRow}>
                 <TouchableOpacity style={styles.pubTextBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>MIT News</ThemedText>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    MIT News
+                  </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.pubTextBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>Nature</ThemedText>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    Nature
+                  </ThemedText>
                 </TouchableOpacity>
               </View>
               <View style={styles.pubRow}>
                 <TouchableOpacity style={styles.pubPillBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>News</ThemedText>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    News
+                  </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.pubPillBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>Research</ThemedText>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    Research
+                  </ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -207,7 +296,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Layout.gutter,
-    paddingTop: 60, 
+    paddingTop: 60,
     paddingBottom: Spacing.md,
   },
   backButton: {
@@ -227,7 +316,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   searchPill: {
-    backgroundColor: '#F2F2FF', 
+    backgroundColor: '#F2F2FF',
     borderRadius: Radius.md,
     paddingVertical: 14,
     alignItems: 'center',
@@ -243,7 +332,7 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     gap: Spacing.md,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   filterTab: {
     flex: 1,
@@ -253,6 +342,41 @@ const styles = StyleSheet.create({
   },
   filterTabActive: {
     backgroundColor: '#F2F2FF',
+  },
+  verifiedCount: {
+    marginBottom: Spacing.lg,
+  },
+  resourceList: {
+    gap: Spacing.xl,
+  },
+  resourceCard: {
+    paddingBottom: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  sourceTag: {
+    letterSpacing: 0.5,
+  },
+  resourceTitle: {
+    lineHeight: 24,
+  },
+  resourceDescription: {
+    lineHeight: 22,
+  },
+  dateMeta: {
+    marginTop: 2,
+  },
+  resourceFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  resourceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xl,
   },
   section: {
     marginBottom: Spacing.xl + Spacing.sm,
@@ -272,7 +396,7 @@ const styles = StyleSheet.create({
   },
   coursesScroll: {
     gap: 10,
-    paddingRight: Layout.gutter, 
+    paddingRight: Layout.gutter,
     marginHorizontal: -Layout.gutter,
     paddingLeft: Layout.gutter,
   },
