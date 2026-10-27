@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -25,18 +26,30 @@ const COURSES: CourseCardProps[] = [
 
 export default function SearchScreen() {
   const router = useRouter();
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
+
+  const handleBack = () => {
+    if (selectedTopic) {
+      setSelectedTopic(null);
+    } else {
+      router.back();
+    }
+  };
 
   return (
     <View style={styles.screen}>
       {/* --- Header --- */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => router.back()} 
+          onPress={handleBack} 
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Feather name="chevron-left" size={20} color={Colors.ink} />
-          <ThemedText type="label" style={styles.headerTitle}>Explore</ThemedText>
+          <Feather name="chevron-left" size={20} color={Colors.primary} />
+          <ThemedText type="label" style={styles.headerTitle}>
+            {selectedTopic ?? 'Explore'}
+          </ThemedText>
         </TouchableOpacity>
         
         <TouchableOpacity activeOpacity={0.7}>
@@ -44,86 +57,142 @@ export default function SearchScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* --- Hero Section --- */}
-        <ThemedText type="display" style={styles.heroTitle}>
-          Follow your curiosity.
-        </ThemedText>
-
-        {/* Fake Search Input Pill */}
-        <TouchableOpacity style={styles.searchPill} activeOpacity={0.8}>
-          <ThemedText type="label" style={{ color: Colors.primary }}>
-            Search topics, papers & publishers
-          </ThemedText>
-        </TouchableOpacity>
-
-        {/* --- Recent Searches --- */}
-        <View style={styles.section}>
-          <ThemedText type="title">Recent searches</ThemedText>
-          <View style={styles.recentList}>
-            {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
-              <TouchableOpacity key={item} style={styles.recentItem} activeOpacity={0.7}>
-                <ThemedText type="label" style={{ color: Colors.primary }}>{item}</ThemedText>
-                <Feather name="arrow-right" size={16} color={Colors.primary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* --- Topic Collections --- */}
-        <View style={styles.section}>
-          <ThemedText type="title">Topic collections</ThemedText>
-          <ThemedText type="label" style={styles.subHeading}>For your courses</ThemedText>
-          
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.coursesScroll}
+      {selectedTopic ? (
+        /* --- Topic Results View (Step 1: Controls & Filter Bar) --- */
+        <ScrollView 
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Active Search Pill */}
+          <TouchableOpacity 
+            style={styles.activeSearchPill} 
+            activeOpacity={0.8}
+            onPress={() => setSelectedTopic(null)}
           >
-            {COURSES.map((course) => (
-              <CourseCard key={course.code} {...course} />
-            ))}
-          </ScrollView>
-        </View>
+            <ThemedText type="label" style={{ color: Colors.primary }}>
+              Search · {selectedTopic}   ×
+            </ThemedText>
+          </TouchableOpacity>
 
-        {/* --- Featured Publishers --- */}
-        <View style={styles.section}>
-          <ThemedText type="title">Featured publishers</ThemedText>
-          
-          <View style={styles.publisherGrid}>
-            <View style={styles.pubRow}>
-              <TouchableOpacity style={styles.pubTextBtn}>
-                <ThemedText type="label" style={{ color: Colors.primary }}>MIT News</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.pubTextBtn}>
-                <ThemedText type="label" style={{ color: Colors.primary }}>Nature</ThemedText>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.pubRow}>
-              <TouchableOpacity style={styles.pubPillBtn}>
-                <ThemedText type="label" style={{ color: Colors.primary }}>News</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.pubPillBtn}>
-                <ThemedText type="label" style={{ color: Colors.primary }}>Research</ThemedText>
-              </TouchableOpacity>
+          {/* Filter Tabs */}
+          <View style={styles.filterRow}>
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === 'all' && styles.filterTabActive,
+              ]}
+              activeOpacity={0.8}
+              onPress={() => setActiveFilter('all')}
+            >
+              <ThemedText type="label" style={{ color: Colors.primary }}>
+                All material
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterTab,
+                activeFilter === 'research' && styles.filterTabActive,
+              ]}
+              activeOpacity={0.8}
+              onPress={() => setActiveFilter('research')}
+            >
+              <ThemedText type="label" style={{ color: Colors.primary }}>
+                Research only
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <ThemedText type="caption" color="muted">
+            2 verified resources
+          </ThemedText>
+        </ScrollView>
+      ) : (
+        /* --- Default Explore View --- */
+        <ScrollView 
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* --- Hero Section --- */}
+          <ThemedText type="display" style={styles.heroTitle}>
+            Follow your curiosity.
+          </ThemedText>
+
+          {/* Fake Search Input Pill */}
+          <TouchableOpacity style={styles.searchPill} activeOpacity={0.8}>
+            <ThemedText type="label" style={{ color: Colors.primary }}>
+              Search topics, papers & publishers
+            </ThemedText>
+          </TouchableOpacity>
+
+          {/* --- Recent Searches --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Recent searches</ThemedText>
+            <View style={styles.recentList}>
+              {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
+                <TouchableOpacity 
+                  key={item} 
+                  style={styles.recentItem} 
+                  activeOpacity={0.7}
+                  onPress={() => setSelectedTopic(item)}
+                >
+                  <ThemedText type="label" style={{ color: Colors.primary }}>{item}</ThemedText>
+                  <Feather name="arrow-right" size={16} color={Colors.primary} />
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-        </View>
 
-        {/* --- Latest Reporting --- */}
-        <View style={styles.section}>
-          <ThemedText type="title">Latest reporting</ThemedText>
-          <ThemedText type="caption" color="muted" style={styles.reportingSub}>
-            MIT NEWS • NEWS
-          </ThemedText>
-          {/* Placeholder for the reporting card at the bottom of the design */}
-          <View style={styles.reportingPlaceholder} />
-        </View>
+          {/* --- Topic Collections --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Topic collections</ThemedText>
+            <ThemedText type="label" style={styles.subHeading}>For your courses</ThemedText>
+            
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.coursesScroll}
+            >
+              {COURSES.map((course) => (
+                <CourseCard key={course.code} {...course} />
+              ))}
+            </ScrollView>
+          </View>
 
-      </ScrollView>
+          {/* --- Featured Publishers --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Featured publishers</ThemedText>
+            
+            <View style={styles.publisherGrid}>
+              <View style={styles.pubRow}>
+                <TouchableOpacity style={styles.pubTextBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>MIT News</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pubTextBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>Nature</ThemedText>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.pubRow}>
+                <TouchableOpacity style={styles.pubPillBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>News</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pubPillBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>Research</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* --- Latest Reporting --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Latest reporting</ThemedText>
+            <ThemedText type="caption" color="muted" style={styles.reportingSub}>
+              MIT NEWS • NEWS
+            </ThemedText>
+            <View style={styles.reportingPlaceholder} />
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -159,9 +228,31 @@ const styles = StyleSheet.create({
   },
   searchPill: {
     backgroundColor: '#F2F2FF', 
+    borderRadius: Radius.md,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: Spacing.xl,
+  },
+  activeSearchPill: {
+    backgroundColor: '#F2F2FF',
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+  },
+  filterTabActive: {
+    backgroundColor: '#F2F2FF',
   },
   section: {
     marginBottom: Spacing.xl + Spacing.sm,
