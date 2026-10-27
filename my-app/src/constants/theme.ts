@@ -1,65 +1,53 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import '@/global.css';
-
-import { Platform } from 'react-native';
-
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  bg: '#faf9f6',
+  ink: '#20212a',
+  muted: '#747988',
+  primary: '#5546c7',
+  tint: '#f0eeff',
+  cream: '#f7efdf',
+  border: '#e9e8e4',
+  white: '#ffffff',
+  accent: '#8c5e1f',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors;
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+export const FontFamily = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  display: 'LibreBaskerville_400Regular',
+} as const;
+
+export const Typography = {
+  display: { fontFamily: FontFamily.display, fontSize: 30, lineHeight: 38 },
+  title: { fontFamily: FontFamily.semibold, fontSize: 22, lineHeight: 29 },
+  label: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 20 },
+  body: { fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 23 },
+  caption: { fontFamily: FontFamily.medium, fontSize: 12, lineHeight: 18 },
+  meta: { fontFamily: FontFamily.medium, fontSize: 11, lineHeight: 16 },
+} as const;
+
+export type TypographyVariant = keyof typeof Typography;
 
 export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const Radius = {
+  sm: 8,
+  md: 10,
+  lg: 12,
+  pill: 18,
+} as const;
+
+export const Layout = {
+  gutter: 24,
+  touchTarget: 44,
+  courseCardWidth: 188,
+} as const;
