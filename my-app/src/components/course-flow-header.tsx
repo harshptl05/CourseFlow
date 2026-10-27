@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,13 +47,15 @@ export function CourseFlowHeader() {
         </ThemedText>
       </Pressable>
 
-      <Pressable style={styles.action} accessibilityRole="button" accessibilityLabel="Search">
-        <Image
-          source={require('@/assets/icons/search.svg')}
-          style={styles.actionIcon}
-          contentFit="contain"
-        />
-      </Pressable>
+      <Link href="/search" asChild>
+        <Pressable style={styles.action} accessibilityRole="button" accessibilityLabel="Search">
+          <Image
+            source={require('@/assets/icons/search.svg')}
+            style={styles.actionIcon}
+            contentFit="contain"
+          />
+        </Pressable>
+      </Link>
     </View>
   );
 }
