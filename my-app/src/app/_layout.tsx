@@ -47,7 +47,7 @@ export default function RootLayout() {
     <ThemeProvider value={CourseFlowTheme}>
       <SavedProvider>
         <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
       </SavedProvider>
     </ThemeProvider>
   );

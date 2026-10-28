@@ -329,7 +329,7 @@ export default function SearchScreen() {
       <Modal
         visible={justSavedItem !== null}
         transparent
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setJustSavedItem(null)}
       >
         <Pressable
