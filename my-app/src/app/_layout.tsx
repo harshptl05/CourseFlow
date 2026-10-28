@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
+import { SavedProvider } from '@/context/SavedContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,8 +45,10 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={CourseFlowTheme}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <SavedProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }} />
+      </SavedProvider>
     </ThemeProvider>
   );
 }
