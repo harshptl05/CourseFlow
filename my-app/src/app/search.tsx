@@ -191,9 +191,9 @@ export default function SearchScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* --- Hero Section --- */}
-          <ThemedText type="display" style={styles.heroTitle}>
+          {/* <ThemedText type="display" style={styles.heroTitle}>
             Follow your curiosity.
-          </ThemedText>
+          </ThemedText> */}
 
           {/* Fake Search Input Pill */}
           <TouchableOpacity style={styles.searchPill} activeOpacity={0.8}>
