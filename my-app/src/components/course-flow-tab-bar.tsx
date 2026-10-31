@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,12 +12,13 @@ const TAB_ICONS = {
   settings: require('@/assets/icons/tab-settings.svg'),
 } as const;
 
-export function CourseFlowTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function CourseFlowTabBar(props: any) {
+  const { state, descriptors, emitter, navigateToTab } = props;
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
-      {state.routes.map((route, index) => {
+      {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 
@@ -30,14 +30,14 @@ export function CourseFlowTabBar({ state, descriptors, navigation }: BottomTabBa
             accessibilityState={{ selected: isFocused }}
             accessibilityLabel={options.tabBarAccessibilityLabel}
             onPress={() => {
-              const event = navigation.emit({
+              const event = emitter.emit({
                 type: 'tabPress',
                 target: route.key,
                 canPreventDefault: true,
               });
 
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
+                navigateToTab(route.key);
               }
             }}>
             <Image

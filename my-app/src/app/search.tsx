@@ -1,11 +1,19 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
 import { CourseCard, type CourseCardProps } from '@/components/course-card';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import { useSaved, type Resource } from '@/context/SavedContext';
 
 const COURSES: CourseCardProps[] = [
   {
@@ -36,29 +44,55 @@ interface ResourceItem {
 const STATISTICS_RESOURCES: ResourceItem[] = [
   {
     id: 'tidy-data',
-    sourceTag: 'JOURNAL OF STATISTICAL SOFTWARE · FOUNDATIONAL PAPER',
+    sourceTag: 'JOURNAL OF STATISTICAL SOFTWARE',
     title: 'Tidy Data',
     description:
       'Wickham presents a consistent structure for analysis-ready datasets. Organizing observations, variables and observational units makes data easier to reshape, model and visualize.',
-    dateMeta: 'Sep 12, 2014 · 1 min summary',
+    dateMeta: 'Sep 12, 2014',
     courseTag: 'Relevant to STAT 3355',
   },
   {
     id: 'conformal-prediction',
-    sourceTag: 'ARXIV · TUTORIAL PREPRINT',
+    sourceTag: 'ARXIV',
     title:
       'A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification',
     description:
       'This tutorial introduces prediction sets and intervals that quantify uncertainty around model outputs. It combines practical theory with worked examples and Python notebooks.',
-    dateMeta: 'Jul 15, 2021 · revised Dec 7, 2022 · 1 min summary',
+    dateMeta: 'Jul 15, 2021',
     courseTag: 'Relevant to STAT 3355',
   },
 ];
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { saveResource, removeResource, isResourceSaved } = useSaved();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
+  const [justSavedItem, setJustSavedItem] = useState<Resource | null>(null);
+
+  const handleToggleSave = async (item: ResourceItem) => {
+    if (isResourceSaved(item.id)) {
+      await removeResource(item.id);
+      return;
+    }
+
+    const resource: Resource = {
+      id: item.id,
+      title: item.title,
+      category: item.sourceTag,
+      description: item.description,
+      courseCode: 'STAT 3355',
+      dateInfo: item.dateMeta,
+    };
+
+    await saveResource(resource);
+    setJustSavedItem(resource);
+  };
+
+  const openReadingList = () => {
+    setJustSavedItem(null);
+    router.push('/(tabs)/saved');
+  };
 
   const handleBack = () => {
     if (selectedTopic) {
@@ -168,9 +202,18 @@ export default function SearchScreen() {
                   </ThemedText>
 
                   <View style={styles.resourceActions}>
-                    <TouchableOpacity activeOpacity={0.7}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleToggleSave(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isResourceSaved(item.id)
+                          ? `Remove ${item.title} from your reading list`
+                          : `Save ${item.title} to your reading list`
+                      }
+                    >
                       <ThemedText type="label" style={{ color: Colors.primary }}>
-                        Save
+                        {isResourceSaved(item.id) ? 'Saved ✓' : 'Save'}
                       </ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.7}>
@@ -192,7 +235,7 @@ export default function SearchScreen() {
         >
           {/* --- Hero Section --- */}
           <ThemedText type="display" style={styles.heroTitle}>
-            Follow your curiosity.
+            Search topics, papers & publishers.
           </ThemedText>
 
           {/* Fake Search Input Pill */}
@@ -282,6 +325,64 @@ export default function SearchScreen() {
           </View>
         </ScrollView>
       )}
+
+      <Modal
+        visible={justSavedItem !== null}
+        transparent
+        animationType="none"
+        onRequestClose={() => setJustSavedItem(null)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setJustSavedItem(null)}
+        >
+          <Pressable
+            style={styles.bottomSheet}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={styles.sheetHeader}>
+              <ThemedText type="title" style={styles.sheetTitle}>
+                Saved to your reading list
+              </ThemedText>
+              <TouchableOpacity
+                onPress={() => setJustSavedItem(null)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Close confirmation"
+              >
+                <Feather name="x" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ThemedText type="body" color="muted" style={styles.savedItemName}>
+              {justSavedItem?.title}
+            </ThemedText>
+
+            <TouchableOpacity
+              style={styles.viewListButton}
+              onPress={openReadingList}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <ThemedText type="label" style={styles.viewListButtonText}>
+                View reading list
+              </ThemedText>
+              <Feather name="arrow-right" size={16} color={Colors.white} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.keepReadingButton}
+              onPress={() => setJustSavedItem(null)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <ThemedText type="label" style={styles.keepReadingText}>
+                Keep reading
+              </ThemedText>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -430,5 +531,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2FF',
     borderRadius: Radius.md,
     marginTop: Spacing.md,
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(32, 33, 42, 0.32)',
+  },
+  bottomSheet: {
+    backgroundColor: Colors.bg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.xxl,
+    paddingBottom: Spacing.xl * 2,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xl,
+  },
+  sheetTitle: {
+    fontSize: 22,
+    lineHeight: 29,
+  },
+  savedItemName: {
+    marginBottom: Spacing.xl,
+  },
+  viewListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  viewListButtonText: {
+    color: Colors.white,
+  },
+  keepReadingButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  keepReadingText: {
+    color: Colors.primary,
   },
 });
