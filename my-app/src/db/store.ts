@@ -10,6 +10,8 @@ export interface ContentInterest {
 export interface CourseFlowState {
   interests: ContentInterest[];
   savedResourceIds: string[];
+  dailyBriefEnabled: boolean;
+  dailyBriefTime: string;
 }
 
 const STORAGE_KEY = 'courseflow_db_v1';
@@ -21,9 +23,10 @@ const DEFAULT_STATE: CourseFlowState = {
     { id: 'stat', name: 'Statistics', enabled: true },
   ],
   savedResourceIds: [],
+  dailyBriefEnabled: false,
+  dailyBriefTime: '7:00 AM',
 };
 
-// Internal state & listeners for instant cross-screen updates
 let currentState: CourseFlowState = loadInitialState();
 const listeners = new Set<() => void>();
 
@@ -32,7 +35,7 @@ function loadInitialState(): CourseFlowState {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        return JSON.parse(raw);
+        return { ...DEFAULT_STATE, ...JSON.parse(raw) };
       }
     } catch {
       // Fallback to default state if storage is blocked
@@ -70,6 +73,20 @@ export const db = {
       : [...currentState.savedResourceIds, resourceId];
     saveState({ ...currentState, savedResourceIds: updated });
   },
+
+  toggleDailyBrief: () => {
+    saveState({
+      ...currentState,
+      dailyBriefEnabled: !currentState.dailyBriefEnabled,
+    });
+  },
+
+  setDailyBriefTime: (time: string) => {
+    saveState({
+      ...currentState,
+      dailyBriefTime: time,
+    });
+  },
 };
 
 export function useCourseFlowDB() {
@@ -86,7 +103,11 @@ export function useCourseFlowDB() {
   return {
     interests: state.interests,
     savedResourceIds: state.savedResourceIds,
+    dailyBriefEnabled: state.dailyBriefEnabled,
+    dailyBriefTime: state.dailyBriefTime,
     toggleInterest: db.toggleInterest,
     toggleSavedResource: db.toggleSavedResource,
+    toggleDailyBrief: db.toggleDailyBrief,
+    setDailyBriefTime: db.setDailyBriefTime,
   };
 }
