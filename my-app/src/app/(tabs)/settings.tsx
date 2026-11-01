@@ -9,16 +9,74 @@ import { useCourseFlowDB } from '@/db/store';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<'main' | 'interests'>('main');
-  const { interests, toggleInterest } = useCourseFlowDB();
+  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief'>('main');
+  const {
+    interests,
+    toggleInterest,
+    dailyBriefEnabled,
+    dailyBriefTime,
+    toggleDailyBrief,
+  } = useCourseFlowDB();
 
   const SETTINGS_LINKS = [
     { label: 'Notifications', onPress: () => {} },
-    { label: 'Daily Brief preferences', onPress: () => {} },
+    { label: 'Daily Brief preferences', onPress: () => setActiveView('dailyBrief') },
     { label: 'Content interests', onPress: () => setActiveView('interests') },
     { label: 'Manage courses', onPress: () => router.push('/courses') },
     { label: 'Account', onPress: () => {} },
   ];
+
+  if (activeView === 'dailyBrief') {
+    return (
+      <View style={styles.screen}>
+        {/* --- Sub-header --- */}
+        <View style={styles.subHeader}>
+          <TouchableOpacity
+            onPress={() => setActiveView('main')}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Feather name="chevron-left" size={20} color={Colors.primary} />
+            <ThemedText type="label" style={styles.headerTitle}>
+              Daily Brief
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* --- Daily Brief Toggle Card --- */}
+          <View style={styles.interestCard}>
+            <ThemedText type="label">Daily Brief</ThemedText>
+
+            <TouchableOpacity
+              style={styles.toggleBtn}
+              activeOpacity={0.7}
+              onPress={toggleDailyBrief}
+            >
+              <ThemedText type="label" style={{ color: Colors.primary }}>
+                {dailyBriefEnabled ? 'On' : 'Off'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          {/* --- Delivery Time Section --- */}
+          <View style={styles.deliverySection}>
+            <ThemedText type="title">Delivery time</ThemedText>
+            <ThemedText type="display" style={styles.selectedTimeDisplay}>
+              {dailyBriefTime}
+            </ThemedText>
+          </View>
+
+          <ThemedText type="caption" color="muted" style={styles.prototypeNote}>
+            Preference controls are demonstrated in this prototype.
+          </ThemedText>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (activeView === 'interests') {
     return (
@@ -195,5 +253,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  deliverySection: {
+    gap: Spacing.md,
+  },
+  selectedTimeDisplay: {
+    marginTop: Spacing.xs,
+  },
+  prototypeNote: {
+    marginTop: Spacing.md,
   },
 });
