@@ -5,16 +5,12 @@ import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
-
-const INITIAL_INTERESTS = [
-  { id: 'ml', name: 'Machine Learning', enabled: true },
-  { id: 'se', name: 'Software Engineering', enabled: true },
-  { id: 'stat', name: 'Statistics', enabled: true },
-];
+import { useCourseFlowDB } from '@/db/store';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const [activeView, setActiveView] = useState<'main' | 'interests'>('main');
+  const { interests, toggleInterest } = useCourseFlowDB();
 
   const SETTINGS_LINKS = [
     { label: 'Notifications', onPress: () => {} },
@@ -47,15 +43,26 @@ export default function SettingsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.interestList}>
-            {INITIAL_INTERESTS.map((item) => (
+            {interests.map((item) => (
               <View key={item.id} style={styles.interestCard}>
                 <ThemedText type="label">{item.name}</ThemedText>
 
-                <View style={styles.toggleBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    On
+                <TouchableOpacity
+                  style={[
+                    styles.toggleBtn,
+                    !item.enabled && styles.toggleBtnOff,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => toggleInterest(item.id)}
+                >
+                  <ThemedText
+                    type="label"
+                    color={item.enabled ? undefined : 'muted'}
+                    style={item.enabled ? { color: Colors.primary } : undefined}
+                  >
+                    {item.enabled ? 'On' : 'Off'}
                   </ThemedText>
-                </View>
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -183,5 +190,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  toggleBtnOff: {
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 });
