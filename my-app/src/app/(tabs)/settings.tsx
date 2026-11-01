@@ -1,13 +1,15 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -39,7 +41,9 @@ const TIME_SLOTS = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief'>('main');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const timeScrollRef = useRef<ScrollView>(null);
 
   const {
@@ -51,9 +55,34 @@ export default function SettingsScreen() {
     setDailyBriefTime,
   } = useCourseFlowDB();
 
+  const [pendingTime, setPendingTime] = useState<string>(dailyBriefTime);
+
+  // Reset to the main Settings view whenever the Settings tab is pressed or re-entered
+  useEffect(() => {
+    const unsubscribeTabPress = (navigation as any).addListener('tabPress', () => {
+      setShowConfirmModal(false);
+      setActiveView('main');
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      setShowConfirmModal(false);
+      setActiveView('main');
+    });
+
+    return () => {
+      unsubscribeTabPress?.();
+      unsubscribeBlur?.();
+    };
+  }, [navigation]);
+
+  const openDailyBrief = () => {
+    setPendingTime(dailyBriefTime);
+    setActiveView('dailyBrief');
+  };
+
   const SETTINGS_LINKS = [
     { label: 'Notifications', onPress: () => {} },
-    { label: 'Daily Brief preferences', onPress: () => setActiveView('dailyBrief') },
+    { label: 'Daily Brief preferences', onPress: openDailyBrief },
     { label: 'Content interests', onPress: () => setActiveView('interests') },
     { label: 'Manage courses', onPress: () => router.push('/courses') },
     { label: 'Account', onPress: () => {} },
@@ -64,18 +93,28 @@ export default function SettingsScreen() {
     const index = Math.round(offsetY / ITEM_HEIGHT);
     const clampedIndex = Math.max(0, Math.min(index, TIME_SLOTS.length - 1));
     const selected = TIME_SLOTS[clampedIndex];
-    if (selected && selected !== dailyBriefTime) {
-      setDailyBriefTime(selected);
+    if (selected && selected !== pendingTime) {
+      setPendingTime(selected);
     }
   };
 
   const selectTimeSlot = (time: string, index: number) => {
-    setDailyBriefTime(time);
+    setPendingTime(time);
     timeScrollRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
   };
 
+  const handleConfirmSave = () => {
+    setDailyBriefTime(pendingTime);
+    if (!dailyBriefEnabled) {
+      toggleDailyBrief();
+    }
+    setShowConfirmModal(false);
+    setActiveView('main');
+  };
+
+  /* --- Daily Brief Subscreen --- */
   if (activeView === 'dailyBrief') {
-    const initialIndex = Math.max(0, TIME_SLOTS.indexOf(dailyBriefTime));
+    const initialIndex = Math.max(0, TIME_SLOTS.indexOf(pendingTime));
 
     return (
       <View style={styles.screen}>
@@ -116,7 +155,7 @@ export default function SettingsScreen() {
           <View style={styles.deliverySection}>
             <ThemedText type="title">Delivery time</ThemedText>
             <ThemedText type="display" style={styles.selectedTimeDisplay}>
-              {dailyBriefTime}
+              {pendingTime}
             </ThemedText>
 
             {/* --- Scrollable Time Wheel --- */}
@@ -134,7 +173,7 @@ export default function SettingsScreen() {
                 onScrollEndDrag={handleTimeScroll}
               >
                 {TIME_SLOTS.map((time, index) => {
-                  const isSelected = time === dailyBriefTime;
+                  const isSelected = time === pendingTime;
                   return (
                     <TouchableOpacity
                       key={time}
@@ -157,16 +196,75 @@ export default function SettingsScreen() {
                 })}
               </ScrollView>
             </View>
+
+            {/* --- Open Confirmation Popup Button --- */}
+            <TouchableOpacity
+              style={styles.primaryActionBtn}
+              activeOpacity={0.8}
+              onPress={() => setShowConfirmModal(true)}
+            >
+              <ThemedText type="label" style={{ color: Colors.primary }}>
+                Set delivery time
+              </ThemedText>
+            </TouchableOpacity>
           </View>
 
           <ThemedText type="caption" color="muted" style={styles.prototypeNote}>
             Preference controls are demonstrated in this prototype.
           </ThemedText>
         </ScrollView>
+
+        {/* --- Confirmation Popup Modal --- */}
+        <Modal
+          visible={showConfirmModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowConfirmModal(false)}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowConfirmModal(false)}
+          >
+            <Pressable style={styles.modalCard} onPress={() => {}}>
+              <ThemedText type="caption" color="muted">
+                CONFIRM DELIVERY TIME
+              </ThemedText>
+              <ThemedText type="display" style={styles.confirmTimeText}>
+                {pendingTime}
+              </ThemedText>
+              <ThemedText type="body" color="muted" style={styles.confirmDescription}>
+                Deliver your Daily Brief at {pendingTime} each day?
+              </ThemedText>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.primaryActionBtn}
+                  activeOpacity={0.8}
+                  onPress={handleConfirmSave}
+                >
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    Confirm
+                  </ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryActionBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setShowConfirmModal(false)}
+                >
+                  <ThemedText type="label" color="muted">
+                    Cancel
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     );
   }
 
+  /* --- Content Interests Subscreen --- */
   if (activeView === 'interests') {
     return (
       <View style={styles.screen}>
@@ -218,6 +316,7 @@ export default function SettingsScreen() {
     );
   }
 
+  /* --- Main Settings Screen --- */
   return (
     <ScrollView
       style={styles.screen}
@@ -378,6 +477,43 @@ const styles = StyleSheet.create({
   wheelTextSelected: {
     color: Colors.primary,
     opacity: 1,
+  },
+  primaryActionBtn: {
+    backgroundColor: '#F2F2FF',
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  secondaryActionBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Layout.gutter,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: Colors.bg,
+    borderRadius: Radius.md,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  confirmTimeText: {
+    color: Colors.primary,
+    marginVertical: Spacing.xs,
+  },
+  confirmDescription: {
+    lineHeight: 22,
+  },
+  modalActions: {
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
   },
   prototypeNote: {
     marginTop: Spacing.md,
