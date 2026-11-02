@@ -32,7 +32,7 @@ export default function HomeScreen() {
         <ThemedText type="caption" color="muted">
           Curated for your classroom
         </ThemedText>
-        <ThemedText type="display">{'Your reading,\nthoughtfully curated.'}</ThemedText>
+        <ThemedText type="display">{'Your daily feed,\ncurated to help you learn.'}</ThemedText>
       </View>
 
       <ThemedText type="label">For your courses</ThemedText>
