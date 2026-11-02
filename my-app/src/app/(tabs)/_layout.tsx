@@ -13,7 +13,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{ headerShown: false, sceneStyle: styles.scene }}
         tabBar={(props) => <CourseFlowTabBar {...props} />}>
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
+        <Tabs.Screen name="index" options={{ title: 'Reading' }} />
         <Tabs.Screen name="saved" options={{ title: 'Saved' }} />
         <Tabs.Screen name="courses" options={{ title: 'Courses' }} />
         <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
