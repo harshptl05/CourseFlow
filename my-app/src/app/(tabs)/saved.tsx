@@ -28,7 +28,7 @@ export default function SavedScreen() {
       {savedResources.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="bookmark" size={24} color={Colors.primary} />
-          <ThemedText type="title">Your list is waiting</ThemedText>
+          <ThemedText type="title">Save a resource</ThemedText>
           <ThemedText type="body" color="muted" style={styles.emptyDescription}>
             Save a resource from Explore to add it to a course folder.
           </ThemedText>

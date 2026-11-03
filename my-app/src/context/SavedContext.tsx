@@ -9,11 +9,19 @@ export type Resource = {
   dateInfo: string;
 };
 
+export type Course = {
+  id: string;
+  title: string;
+  description: string;
+};
+
 type SavedContextValue = {
   savedResources: Resource[];
   courseAssignments: Record<string, string>;
+  courses: Course[];
   saveResource: (resource: Resource) => Promise<void>;
   removeResource: (resourceId: string) => Promise<void>;
+  addCourse: (course: Course) => void;
   addResourceToCourse: (resourceId: string, courseCode: string) => void;
   isResourceInCourse: (resourceId: string, courseCode: string) => boolean;
   isResourceSaved: (resourceId: string) => boolean;
@@ -24,6 +32,7 @@ const SavedContext = createContext<SavedContextValue | undefined>(undefined);
 export function SavedProvider({ children }: { children: React.ReactNode }) {
   const [savedResources, setSavedResources] = useState<Resource[]>([]);
   const [courseAssignments, setCourseAssignments] = useState<Record<string, string>>({});
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const saveResource = useCallback(async (resource: Resource) => {
     setSavedResources((currentResources) => {
@@ -53,6 +62,10 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const addCourse = useCallback((course: Course) => {
+    setCourses((currentCourses) => [...currentCourses, course]);
+  }, []);
+
   const isResourceInCourse = useCallback(
     (resourceId: string, courseCode: string) => courseAssignments[resourceId] === courseCode,
     [courseAssignments],
@@ -67,8 +80,10 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
     () => ({
       savedResources,
       courseAssignments,
+      courses,
       saveResource,
       removeResource,
+      addCourse,
       addResourceToCourse,
       isResourceInCourse,
       isResourceSaved,
@@ -76,8 +91,10 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
     [
       savedResources,
       courseAssignments,
+      courses,
       saveResource,
       removeResource,
+      addCourse,
       addResourceToCourse,
       isResourceInCourse,
       isResourceSaved,
