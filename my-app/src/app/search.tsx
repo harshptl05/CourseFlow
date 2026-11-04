@@ -39,6 +39,7 @@ interface ResourceItem {
   description: string;
   dateMeta: string;
   courseTag: string;
+  courseCode: string;
 }
 
 const STATISTICS_RESOURCES: ResourceItem[] = [
@@ -50,6 +51,7 @@ const STATISTICS_RESOURCES: ResourceItem[] = [
       'Wickham presents a consistent structure for analysis-ready datasets. Organizing observations, variables and observational units makes data easier to reshape, model and visualize.',
     dateMeta: 'Sep 12, 2014',
     courseTag: 'Relevant to STAT 3355',
+    courseCode: 'STAT 3355',
   },
   {
     id: 'conformal-prediction',
@@ -60,12 +62,19 @@ const STATISTICS_RESOURCES: ResourceItem[] = [
       'This tutorial introduces prediction sets and intervals that quantify uncertainty around model outputs. It combines practical theory with worked examples and Python notebooks.',
     dateMeta: 'Jul 15, 2021',
     courseTag: 'Relevant to STAT 3355',
+    courseCode: 'STAT 3355',
   },
 ];
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { saveResource, removeResource, isResourceSaved } = useSaved();
+  const {
+    saveResource,
+    removeResource,
+    addResourceToCourse,
+    isResourceInCourse,
+    isResourceSaved,
+  } = useSaved();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
   const [justSavedItem, setJustSavedItem] = useState<Resource | null>(null);
@@ -81,12 +90,27 @@ export default function SearchScreen() {
       title: item.title,
       category: item.sourceTag,
       description: item.description,
-      courseCode: 'STAT 3355',
+      courseCode: item.courseCode,
       dateInfo: item.dateMeta,
     };
 
     await saveResource(resource);
     setJustSavedItem(resource);
+  };
+
+  const handleAddToCourse = async (item: ResourceItem) => {
+    if (!isResourceSaved(item.id)) {
+      await saveResource({
+        id: item.id,
+        title: item.title,
+        category: item.sourceTag,
+        description: item.description,
+        courseCode: item.courseCode,
+        dateInfo: item.dateMeta,
+      });
+    }
+
+    addResourceToCourse(item.id, item.courseCode);
   };
 
   const openReadingList = () => {
@@ -216,9 +240,19 @@ export default function SearchScreen() {
                         {isResourceSaved(item.id) ? 'Saved ✓' : 'Save'}
                       </ThemedText>
                     </TouchableOpacity>
-                    <TouchableOpacity activeOpacity={0.7}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      disabled={isResourceInCourse(item.id, item.courseCode)}
+                      onPress={() => handleAddToCourse(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isResourceInCourse(item.id, item.courseCode)
+                          ? `${item.title} is in ${item.courseCode}`
+                          : `Add ${item.title} to ${item.courseCode}`
+                      }
+                    >
                       <ThemedText type="label" style={{ color: Colors.primary }}>
-                        Add
+                        {isResourceInCourse(item.id, item.courseCode) ? 'Added ✓' : 'Add'}
                       </ThemedText>
                     </TouchableOpacity>
                   </View>
