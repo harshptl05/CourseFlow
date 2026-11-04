@@ -42,7 +42,8 @@ const TIME_SLOTS = [
 export default function SettingsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief' | 'notifications'>('main');  
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const timeScrollRef = useRef<ScrollView>(null);
 
@@ -81,8 +82,7 @@ export default function SettingsScreen() {
   };
 
   const SETTINGS_LINKS = [
-    { label: 'Notifications', onPress: () => {} },
-    { label: 'Daily Brief preferences', onPress: openDailyBrief },
+    { label: 'Notifications', onPress: () => setActiveView('notifications') },    { label: 'Daily Brief preferences', onPress: openDailyBrief },
     { label: 'Content interests', onPress: () => setActiveView('interests') },
     { label: 'Manage courses', onPress: () => router.push('/courses') },
     { label: 'Account', onPress: () => {} },
@@ -315,6 +315,16 @@ export default function SettingsScreen() {
       </View>
     );
   }
+
+
+// --- Notifications Subscreen ---
+if (activeView === 'notifications') {
+  return (
+    <View style={styles.screen}>
+      <ThemedText type="title">Notifications</ThemedText>
+    </View>
+  );
+}
 
   /* --- Main Settings Screen --- */
   return (
