@@ -7,11 +7,19 @@ export interface ContentInterest {
   enabled: boolean;
 }
 
+export interface UserProfile {
+  name: string;
+  university: string;
+  gmail: string;
+  isSignedIn: boolean;
+}
+
 export interface CourseFlowState {
   interests: ContentInterest[];
   savedResourceIds: string[];
   dailyBriefEnabled: boolean;
   dailyBriefTime: string;
+  userProfile: UserProfile;
 }
 
 const STORAGE_KEY = 'courseflow_db_v1';
@@ -25,7 +33,20 @@ const DEFAULT_STATE: CourseFlowState = {
   savedResourceIds: [],
   dailyBriefEnabled: false,
   dailyBriefTime: '7:00 AM',
+  userProfile: {
+    name: 'Harsh Patel',
+    university: 'UT Dallas',
+    gmail: 'harsh.patel@gmail.com',
+    isSignedIn: true,
+  },
 };
+
+export function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'CF';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 let currentState: CourseFlowState = loadInitialState();
 const listeners = new Set<() => void>();
@@ -35,7 +56,15 @@ function loadInitialState(): CourseFlowState {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        return { ...DEFAULT_STATE, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        return {
+          ...DEFAULT_STATE,
+          ...parsed,
+          userProfile: {
+            ...DEFAULT_STATE.userProfile,
+            ...(parsed.userProfile || {}),
+          },
+        };
       }
     } catch {
       // Fallback to default state if storage is blocked
@@ -87,6 +116,29 @@ export const db = {
       dailyBriefTime: time,
     });
   },
+
+  updateUserProfile: (updates: Partial<UserProfile>) => {
+    saveState({
+      ...currentState,
+      userProfile: {
+        ...currentState.userProfile,
+        ...updates,
+        isSignedIn: true,
+      },
+    });
+  },
+
+  signOut: () => {
+    saveState({
+      ...currentState,
+      userProfile: {
+        name: 'Guest Educator',
+        university: '',
+        gmail: '',
+        isSignedIn: false,
+      },
+    });
+  },
 };
 
 export function useCourseFlowDB() {
@@ -105,9 +157,12 @@ export function useCourseFlowDB() {
     savedResourceIds: state.savedResourceIds,
     dailyBriefEnabled: state.dailyBriefEnabled,
     dailyBriefTime: state.dailyBriefTime,
+    userProfile: state.userProfile,
     toggleInterest: db.toggleInterest,
     toggleSavedResource: db.toggleSavedResource,
     toggleDailyBrief: db.toggleDailyBrief,
     setDailyBriefTime: db.setDailyBriefTime,
+    updateUserProfile: db.updateUserProfile,
+    signOut: db.signOut,
   };
 }
