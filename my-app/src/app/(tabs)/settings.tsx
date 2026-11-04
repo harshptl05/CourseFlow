@@ -5,6 +5,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
+  Switch,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -319,9 +320,21 @@ export default function SettingsScreen() {
 
 // --- Notifications Subscreen ---
 if (activeView === 'notifications') {
-  return (
-    <View style={styles.screen}>
+  return (<View style={styles.screen}>
       <ThemedText type="title">Notifications</ThemedText>
+      <View style={styles.notificationRow}><ThemedText>Allow Notifications</ThemedText>
+        <TouchableOpacity style={[styles.toggleBtn, !notificationsEnabled && styles.toggleBtnOff,]}
+          onPress={() => setNotificationsEnabled(!notificationsEnabled)} activeOpacity={0.7}>
+          <ThemedText type="label"> {notificationsEnabled ? 'On' : 'Off'}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.primaryActionBtn} onPress={() => setActiveView('main')}>
+        <ThemedText type="label" style={{ color: Colors.primary}}>
+          Save & Go Back
+        </ThemedText>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -528,4 +541,10 @@ const styles = StyleSheet.create({
   prototypeNote: {
     marginTop: Spacing.md,
   },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  }
 });
