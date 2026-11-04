@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { UNREAD_NOTIFICATION_COUNT } from '@/app/notifications';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 
@@ -30,16 +31,23 @@ export function CourseFlowHeader() {
         </ThemedText>
       </View>
 
-      <Pressable
-        style={styles.action}
-        accessibilityRole="button"
-        accessibilityLabel="Notifications">
-        <Image
-          source={require('@/assets/icons/bell.svg')}
-          style={styles.actionIcon}
-          contentFit="contain"
-        />
-      </Pressable>
+      <Link href="/notifications" asChild>
+        <Pressable
+          style={styles.action}
+          accessibilityRole="button"
+          accessibilityLabel={
+            UNREAD_NOTIFICATION_COUNT > 0
+              ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
+              : 'Notifications'
+          }>
+          <Image
+            source={require('@/assets/icons/bell.svg')}
+            style={styles.actionIcon}
+            contentFit="contain"
+          />
+          {UNREAD_NOTIFICATION_COUNT > 0 ? <View style={styles.badge} /> : null}
+        </Pressable>
+      </Link>
 
       <Pressable style={styles.avatar} accessibilityRole="button" accessibilityLabel="Your profile">
         <ThemedText type="label" color="primary">
@@ -85,6 +93,17 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 22,
     height: 22,
+  },
+  badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: Colors.bg,
+    backgroundColor: Colors.primary,
   },
   avatar: {
     width: Layout.touchTarget,
