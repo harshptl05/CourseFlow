@@ -11,6 +11,7 @@ export interface UserProfile {
   name: string;
   university: string;
   gmail: string;
+  password?: string;
   isSignedIn: boolean;
 }
 
@@ -22,7 +23,8 @@ export interface CourseFlowState {
   userProfile: UserProfile;
 }
 
-const STORAGE_KEY = 'courseflow_db_v1';
+// Bumped storage key so the app starts fresh on the Sign In screen
+const STORAGE_KEY = 'courseflow_db_v2';
 
 const DEFAULT_STATE: CourseFlowState = {
   interests: [
@@ -36,8 +38,9 @@ const DEFAULT_STATE: CourseFlowState = {
   userProfile: {
     name: 'Harsh Patel',
     university: 'UT Dallas',
-    gmail: 'harsh.patel@gmail.com',
-    isSignedIn: true,
+    gmail: 'prof@gmail.com',
+    password: 'cgs4352!',
+    isSignedIn: false,
   },
 };
 
@@ -128,13 +131,41 @@ export const db = {
     });
   },
 
+  signIn: (gmail: string, password?: string) => {
+    saveState({
+      ...currentState,
+      userProfile: {
+        ...currentState.userProfile,
+        gmail: gmail.trim() || 'prof@gmail.com',
+        password: password || currentState.userProfile.password,
+        isSignedIn: true,
+      },
+    });
+  },
+
+  createAccount: (params: {
+    name: string;
+    university: string;
+    gmail: string;
+    password?: string;
+  }) => {
+    saveState({
+      ...currentState,
+      userProfile: {
+        name: params.name.trim() || 'Harsh Patel',
+        university: params.university.trim() || 'UT Dallas',
+        gmail: params.gmail.trim() || 'prof@gmail.com',
+        password: params.password || 'cgs4352!',
+        isSignedIn: true,
+      },
+    });
+  },
+
   signOut: () => {
     saveState({
       ...currentState,
       userProfile: {
-        name: 'Guest Educator',
-        university: '',
-        gmail: '',
+        ...currentState.userProfile,
         isSignedIn: false,
       },
     });
@@ -163,6 +194,8 @@ export function useCourseFlowDB() {
     toggleDailyBrief: db.toggleDailyBrief,
     setDailyBriefTime: db.setDailyBriefTime,
     updateUserProfile: db.updateUserProfile,
+    signIn: db.signIn,
+    createAccount: db.createAccount,
     signOut: db.signOut,
   };
 }
