@@ -5,6 +5,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
+  Switch,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -42,7 +43,8 @@ const TIME_SLOTS = [
 export default function SettingsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief' | 'notifications'>('main');  
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const timeScrollRef = useRef<ScrollView>(null);
 
@@ -81,8 +83,7 @@ export default function SettingsScreen() {
   };
 
   const SETTINGS_LINKS = [
-    { label: 'Notifications', onPress: () => {} },
-    { label: 'Daily Brief preferences', onPress: openDailyBrief },
+    { label: 'Notifications', onPress: () => setActiveView('notifications') },    { label: 'Daily Brief preferences', onPress: openDailyBrief },
     { label: 'Content interests', onPress: () => setActiveView('interests') },
     { label: 'Manage courses', onPress: () => router.push('/courses') },
     { label: 'Account', onPress: () => {} },
@@ -316,6 +317,38 @@ export default function SettingsScreen() {
     );
   }
 
+
+// --- Notifications Subscreen ---
+if (activeView === 'notifications') {
+  return ( <View style={styles.screen}>
+  <View style={styles.subHeader}><TouchableOpacity
+      onPress={() => setActiveView('main')}
+      style={styles.backButton}
+      activeOpacity={0.7}>
+      <Feather name="chevron-left" size={20} color={Colors.primary} />
+      <ThemedText type="label" style={styles.headerTitle}>Notifications</ThemedText>
+    </TouchableOpacity>
+  </View>
+
+  <View style={styles.content}>
+    <View style={styles.interestCard}>
+        <ThemedText type="label">Allow Notifications</ThemedText>
+        <TouchableOpacity style={[styles.toggleBtn, !notificationsEnabled && styles.toggleBtnOff,]}
+          onPress={() => setNotificationsEnabled(!notificationsEnabled)} activeOpacity={0.7}>
+          <ThemedText type="label"> {notificationsEnabled ? 'On' : 'Off'}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.primaryActionBtn} onPress={() => setActiveView('main')}>
+        <ThemedText type="label" style={{ color: Colors.primary}}>
+          Save & Go Back
+        </ThemedText>
+      </TouchableOpacity>
+    </View></View>
+  );
+}
+
   /* --- Main Settings Screen --- */
   return (
     <ScrollView
@@ -518,4 +551,10 @@ const styles = StyleSheet.create({
   prototypeNote: {
     marginTop: Spacing.md,
   },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  }
 });
