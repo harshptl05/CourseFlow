@@ -20,10 +20,10 @@ export default function AuthScreen() {
   const { signIn, createAccount } = useCourseFlowDB();
 
   const [mode, setMode] = useState<'signIn' | 'createAccount'>('signIn');
-  const [name, setName] = useState('Harsh Patel');
-  const [university, setUniversity] = useState('UT Dallas');
-  const [gmail, setGmail] = useState('prof@gmail.com');
-  const [password, setPassword] = useState('cgs4352!');
+  const [name, setName] = useState('');
+  const [university, setUniversity] = useState('');
+  const [gmail, setGmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -36,8 +36,16 @@ export default function AuthScreen() {
     }
 
     if (mode === 'signIn') {
-      signIn(gmail, password);
+      const success = signIn(gmail, password);
+      if (!success) {
+        setErrorMessage('Invalid email or password.');
+        return;
+      }
     } else {
+      if (!name.trim()) {
+        setErrorMessage('Please enter your full name.');
+        return;
+      }
       createAccount({
         name,
         university,
@@ -120,7 +128,7 @@ export default function AuthScreen() {
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="Harsh Patel"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.muted}
                   style={styles.textInput}
                 />
@@ -131,7 +139,7 @@ export default function AuthScreen() {
                 <TextInput
                   value={university}
                   onChangeText={setUniversity}
-                  placeholder="UT Dallas"
+                  placeholder="Enter your university"
                   placeholderTextColor={Colors.muted}
                   style={styles.textInput}
                 />
@@ -144,7 +152,7 @@ export default function AuthScreen() {
             <TextInput
               value={gmail}
               onChangeText={setGmail}
-              placeholder="prof@gmail.com"
+              placeholder="Enter your email"
               placeholderTextColor={Colors.muted}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -197,10 +205,6 @@ export default function AuthScreen() {
             <Feather name="arrow-right" size={16} color={Colors.primary} />
           </TouchableOpacity>
         </View>
-
-        <ThemedText type="caption" color="muted" style={styles.footerNote}>
-          Default demo credentials pre-filled: prof@gmail.com · cgs4352!
-        </ThemedText>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -292,8 +296,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.xs,
-  },
-  footerNote: {
-    textAlign: 'center',
   },
 });

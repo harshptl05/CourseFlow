@@ -21,10 +21,18 @@ export interface CourseFlowState {
   dailyBriefEnabled: boolean;
   dailyBriefTime: string;
   userProfile: UserProfile;
+  accounts: UserProfile[];
 }
 
-// Bumped storage key so the app starts fresh on the Sign In screen
-const STORAGE_KEY = 'courseflow_db_v2';
+const STORAGE_KEY = 'courseflow_db_v3';
+
+const DEFAULT_PROF_ACCOUNT: UserProfile = {
+  name: 'Harsh Patel',
+  university: 'UT Dallas',
+  gmail: 'prof@gmail.com',
+  password: 'cgs4352!',
+  isSignedIn: false,
+};
 
 const DEFAULT_STATE: CourseFlowState = {
   interests: [
@@ -36,12 +44,10 @@ const DEFAULT_STATE: CourseFlowState = {
   dailyBriefEnabled: false,
   dailyBriefTime: '7:00 AM',
   userProfile: {
-    name: 'Harsh Patel',
-    university: 'UT Dallas',
-    gmail: 'prof@gmail.com',
-    password: 'cgs4352!',
+    ...DEFAULT_PROF_ACCOUNT,
     isSignedIn: false,
   },
+  accounts: [DEFAULT_PROF_ACCOUNT],
 };
 
 export function getInitials(name: string): string {
@@ -67,6 +73,7 @@ function loadInitialState(): CourseFlowState {
             ...DEFAULT_STATE.userProfile,
             ...(parsed.userProfile || {}),
           },
+          accounts: parsed.accounts?.length ? parsed.accounts : [DEFAULT_PROF_ACCOUNT],
         };
       }
     } catch {
@@ -121,26 +128,44 @@ export const db = {
   },
 
   updateUserProfile: (updates: Partial<UserProfile>) => {
+    const updatedProfile: UserProfile = {
+      ...currentState.userProfile,
+      ...updates,
+      isSignedIn: true,
+    };
+
+    const updatedAccounts = currentState.accounts.map((acc) =>
+      acc.gmail.toLowerCase() === currentState.userProfile.gmail.toLowerCase()
+        ? updatedProfile
+        : acc
+    );
+
     saveState({
       ...currentState,
-      userProfile: {
-        ...currentState.userProfile,
-        ...updates,
-        isSignedIn: true,
-      },
+      userProfile: updatedProfile,
+      accounts: updatedAccounts,
     });
   },
 
-  signIn: (gmail: string, password?: string) => {
+  signIn: (gmail: string, password?: string): boolean => {
+    const normalizedEmail = gmail.trim().toLowerCase();
+    const matchedAccount = currentState.accounts.find(
+      (acc) =>
+        acc.gmail.toLowerCase() === normalizedEmail && acc.password === password
+    );
+
+    if (!matchedAccount) {
+      return false;
+    }
+
     saveState({
       ...currentState,
       userProfile: {
-        ...currentState.userProfile,
-        gmail: gmail.trim() || 'prof@gmail.com',
-        password: password || currentState.userProfile.password,
+        ...matchedAccount,
         isSignedIn: true,
       },
     });
+    return true;
   },
 
   createAccount: (params: {
@@ -149,15 +174,22 @@ export const db = {
     gmail: string;
     password?: string;
   }) => {
+    const newAccount: UserProfile = {
+      name: params.name.trim() || 'Educator',
+      university: params.university.trim() || 'UT Dallas',
+      gmail: params.gmail.trim(),
+      password: params.password,
+      isSignedIn: true,
+    };
+
+    const filteredAccounts = currentState.accounts.filter(
+      (acc) => acc.gmail.toLowerCase() !== newAccount.gmail.toLowerCase()
+    );
+
     saveState({
       ...currentState,
-      userProfile: {
-        name: params.name.trim() || 'Harsh Patel',
-        university: params.university.trim() || 'UT Dallas',
-        gmail: params.gmail.trim() || 'prof@gmail.com',
-        password: params.password || 'cgs4352!',
-        isSignedIn: true,
-      },
+      userProfile: newAccount,
+      accounts: [...filteredAccounts, newAccount],
     });
   },
 

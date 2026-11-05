@@ -147,10 +147,8 @@ export default function SettingsScreen() {
 
   const handleSignOut = () => {
     signOut();
-    setNameInput('Guest Educator');
-    setUniversityInput('');
-    setGmailInput('');
     setActiveView('main');
+    router.replace('/auth');
   };
 
   /* --- Account Subscreen --- */
