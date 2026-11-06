@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -12,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { CourseCard, type CourseCardProps } from '@/components/course-card';
 import { ThemedText } from '@/components/themed-text';
+import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 import { useSaved, type Resource } from '@/context/SavedContext';
 
@@ -74,10 +77,36 @@ export default function SearchScreen() {
     addResourceToCourse,
     isResourceInCourse,
     isResourceSaved,
+    savedResources,
+    courseAssignments,
+    courses,
   } = useSaved();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
   const [justSavedItem, setJustSavedItem] = useState<Resource | null>(null);
+  const [courseSearch, setCourseSearch] = useState('');
+  const courseSearchRef = useRef<TextInputInstance>(null);
+
+  const courseCodes = getCourseCodes(
+    savedResources.map((resource) => resource.courseCode),
+    courseAssignments,
+    courses.map((course) => course.id),
+  );
+  const query = courseSearch.trim().toLocaleLowerCase();
+  const matchingCourses = query
+    ? courseCodes
+        .map((code) => {
+          const course = courses.find((item) => item.id === code);
+          return {
+            code,
+            title: course?.title ?? COURSE_NAMES[code] ?? 'Course materials',
+            description: course?.description ?? '',
+          };
+        })
+        .filter(({ code, title, description }) =>
+          `${code} ${title} ${description}`.toLocaleLowerCase().includes(query),
+        )
+    : [];
 
   const handleToggleSave = async (item: ResourceItem) => {
     if (isResourceSaved(item.id)) {
@@ -141,7 +170,14 @@ export default function SearchScreen() {
           </ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity activeOpacity={0.7}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Search courses"
+          onPress={() => {
+            setSelectedTopic(null);
+            courseSearchRef.current?.focus();
+          }}>
           <Feather name="search" size={20} color={Colors.ink} />
         </TouchableOpacity>
       </View>
@@ -269,94 +305,127 @@ export default function SearchScreen() {
         >
           {/* --- Hero Section --- */}
           <ThemedText type="display" style={styles.heroTitle}>
-            Search topics, papers & publishers.
+            Find one of your courses.
           </ThemedText>
 
-          {/* Fake Search Input Pill */}
-          <TouchableOpacity style={styles.searchPill} activeOpacity={0.8}>
-            <ThemedText type="label" style={{ color: Colors.primary }}>
-              Search topics, papers & publishers
-            </ThemedText>
-          </TouchableOpacity>
+          <View style={styles.searchPill}>
+            <Feather name="search" size={18} color={Colors.muted} />
+            <TextInput
+              ref={courseSearchRef}
+              value={courseSearch}
+              onChangeText={setCourseSearch}
+              placeholder="Search by course title, ID, or description"
+              placeholderTextColor={Colors.muted}
+              style={styles.searchInput}
+              accessibilityLabel="Search your courses"
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {courseSearch.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear course search"
+                hitSlop={8}
+                onPress={() => setCourseSearch('')}>
+                <Feather name="x-circle" size={18} color={Colors.muted} />
+              </Pressable>
+            ) : null}
+          </View>
 
-          {/* --- Recent Searches --- */}
-          <View style={styles.section}>
-            <ThemedText type="title">Recent searches</ThemedText>
-            <View style={styles.recentList}>
-              {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
-                <TouchableOpacity
-                  key={item}
-                  style={styles.recentItem}
-                  activeOpacity={0.7}
-                  onPress={() => setSelectedTopic(item)}
-                >
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    {item}
+          {courseSearch.trim() ? (
+            <View style={styles.courseSearchResults}>
+              <ThemedText type="caption" color="muted">
+                {matchingCourses.length === 1
+                  ? '1 course found'
+                  : `${matchingCourses.length} courses found`}
+              </ThemedText>
+              {matchingCourses.length > 0 ? (
+                <View style={styles.courseResultList}>
+                  {matchingCourses.map((course) => {
+                    const resourceCount = savedResources.filter(
+                      (resource) => courseAssignments[resource.id] === course.code,
+                    ).length;
+
+                    return (
+                      <Pressable
+                        key={course.code}
+                        style={styles.courseResult}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${course.title}, ${course.code}`}
+                        onPress={() => router.navigate('/(tabs)/courses')}>
+                        <View style={styles.courseResultIcon}>
+                          <Feather name="book-open" size={18} color={Colors.primary} />
+                        </View>
+                        <View style={styles.courseResultText}>
+                          <ThemedText type="label">{course.title}</ThemedText>
+                          <ThemedText type="caption" color="muted">
+                            {course.code} · {resourceCount}{' '}
+                            {resourceCount === 1 ? 'resource' : 'resources'}
+                          </ThemedText>
+                          {course.description ? (
+                            <ThemedText
+                              type="caption"
+                              color="muted"
+                              numberOfLines={2}>
+                              {course.description}
+                            </ThemedText>
+                          ) : null}
+                        </View>
+                        <Feather name="arrow-right" size={17} color={Colors.primary} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={styles.noCourseResults}>
+                  <ThemedText type="label">No matching courses</ThemedText>
+                  <ThemedText type="caption" color="muted">
+                    Search using a title, course ID, or description from Your courses.
                   </ThemedText>
-                  <Feather name="arrow-right" size={16} color={Colors.primary} />
-                </TouchableOpacity>
-              ))}
+                </View>
+              )}
             </View>
-          </View>
-
-          {/* --- Topic Collections --- */}
-          <View style={styles.section}>
-            <ThemedText type="title">Topic collections</ThemedText>
-            <ThemedText type="label" style={styles.subHeading}>
-              For your courses
-            </ThemedText>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.coursesScroll}
-            >
-              {COURSES.map((course) => (
-                <CourseCard key={course.code} {...course} />
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* --- Featured Publishers --- */}
-          <View style={styles.section}>
-            <ThemedText type="title">Featured publishers</ThemedText>
-
-            <View style={styles.publisherGrid}>
-              <View style={styles.pubRow}>
-                <TouchableOpacity style={styles.pubTextBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    MIT News
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.pubTextBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    Nature
-                  </ThemedText>
-                </TouchableOpacity>
+          ) : (
+            <>
+              {/* --- Recent Searches --- */}
+              <View style={styles.section}>
+                <ThemedText type="title">Recent searches</ThemedText>
+                <View style={styles.recentList}>
+                  {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={styles.recentItem}
+                      activeOpacity={0.7}
+                      onPress={() => setSelectedTopic(item)}>
+                      <ThemedText type="label" style={{ color: Colors.primary }}>
+                        {item}
+                      </ThemedText>
+                      <Feather name="arrow-right" size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-              <View style={styles.pubRow}>
-                <TouchableOpacity style={styles.pubPillBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    News
-                  </ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.pubPillBtn}>
-                  <ThemedText type="label" style={{ color: Colors.primary }}>
-                    Research
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
 
-          {/* --- Latest Reporting --- */}
-          <View style={styles.section}>
-            <ThemedText type="title">Latest reporting</ThemedText>
-            <ThemedText type="caption" color="muted" style={styles.reportingSub}>
-              MIT NEWS • NEWS
-            </ThemedText>
-            <View style={styles.reportingPlaceholder} />
-          </View>
+              {/* --- Topic Collections --- */}
+              <View style={styles.section}>
+                <ThemedText type="title">Topic collections</ThemedText>
+                <ThemedText type="label" style={styles.subHeading}>
+                  For your courses
+                </ThemedText>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.coursesScroll}>
+                  {COURSES.map((course) => (
+                    <CourseCard key={course.code} {...course} />
+                  ))}
+                </ScrollView>
+              </View>
+            </>
+          )}
+
         </ScrollView>
       )}
 
@@ -451,11 +520,55 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   searchPill: {
+    flexDirection: 'row',
+    gap: Spacing.md,
     backgroundColor: '#F2F2FF',
     borderRadius: Radius.md,
-    paddingVertical: 14,
+    minHeight: 50,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.xl,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: Spacing.md,
+    color: Colors.ink,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+  },
+  courseSearchResults: {
+    gap: Spacing.md,
+  },
+  courseResultList: {
+    gap: Spacing.sm,
+  },
+  courseResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.white,
+  },
+  courseResultIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+    backgroundColor: Colors.tint,
+  },
+  courseResultText: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  noCourseResults: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    gap: Spacing.sm,
   },
   activeSearchPill: {
     backgroundColor: '#F2F2FF',
@@ -534,37 +647,6 @@ const styles = StyleSheet.create({
     paddingRight: Layout.gutter,
     marginHorizontal: -Layout.gutter,
     paddingLeft: Layout.gutter,
-  },
-  publisherGrid: {
-    marginTop: Spacing.md,
-    gap: Spacing.md,
-  },
-  pubRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: Spacing.md,
-  },
-  pubTextBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  pubPillBtn: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#F2F2FF',
-    borderRadius: Radius.md,
-    paddingVertical: 12,
-  },
-  reportingSub: {
-    marginTop: Spacing.xs,
-    letterSpacing: 0.5,
-  },
-  reportingPlaceholder: {
-    height: 100,
-    backgroundColor: '#F2F2FF',
-    borderRadius: Radius.md,
-    marginTop: Spacing.md,
   },
   modalBackdrop: {
     flex: 1,

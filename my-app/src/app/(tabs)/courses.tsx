@@ -10,16 +10,9 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 import { useSaved } from '@/context/SavedContext';
-
-const COURSE_NAMES: Record<string, string> = {
-  'CS 4375': 'Machine Learning',
-  'CS 3354': 'Software Engineering',
-  'STAT 3355': 'Statistics',
-};
-
-const DEFAULT_COURSES = ['CS 4375', 'CS 3354', 'STAT 3355'];
 
 export default function CoursesScreen() {
   const { savedResources, courseAssignments, courses, addCourse } = useSaved();
@@ -29,13 +22,10 @@ export default function CoursesScreen() {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
 
-  const courseCodes = Array.from(
-    new Set([
-      ...DEFAULT_COURSES,
-      ...savedResources.map((resource) => resource.courseCode),
-      ...Object.values(courseAssignments),
-      ...courses.map((course) => course.id),
-    ]),
+  const courseCodes = getCourseCodes(
+    savedResources.map((resource) => resource.courseCode),
+    courseAssignments,
+    courses.map((course) => course.id),
   );
 
   const resetCourseForm = () => {
