@@ -7,6 +7,7 @@ export type Resource = {
   description: string;
   courseCode: string;
   dateInfo: string;
+  url?: string;
 };
 
 export type Course = {

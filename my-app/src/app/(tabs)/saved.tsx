@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
@@ -67,6 +67,21 @@ export default function SavedScreen() {
                     Relevant to {resource.courseCode}
                   </ThemedText>
                 </View>
+                {resource.url ? (
+                  <Pressable
+                    style={styles.readLink}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Read ${resource.title}`}
+                    hitSlop={8}
+                    onPress={() => {
+                      Linking.openURL(resource.url as string).catch(() => {});
+                    }}>
+                    <ThemedText type="label" style={styles.relevance}>
+                      Read
+                    </ThemedText>
+                    <Feather name="external-link" size={14} color={Colors.primary} />
+                  </Pressable>
+                ) : null}
                 <Pressable
                   style={[styles.primaryButton, isAssigned && styles.assignedButton]}
                   accessibilityRole="button"
@@ -152,6 +167,12 @@ const styles = StyleSheet.create({
   },
   relevance: {
     color: Colors.primary,
+  },
+  readLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   primaryButton: {
     minHeight: 44,
