@@ -7,67 +7,36 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
-import { CourseCard, type CourseCardProps } from '@/components/course-card';
+import { ArticleCard } from '@/components/article-card';
+import { CourseCard } from '@/components/course-card';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import {
+  COURSE_TOPICS,
+  findCourseByTopic,
+  getArticlesForCourse,
+  type Article,
+} from '@/data/articles';
 import { useSaved, type Resource } from '@/context/SavedContext';
 
-const COURSES: CourseCardProps[] = [
-  {
-    code: 'CS 4375',
-    icon: require('@/assets/icons/course-ml.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 5 suggested reads',
-    surface: 'tint',
-  },
-  {
-    code: 'CS 3354',
-    icon: require('@/assets/icons/course-code.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 3 suggested reads',
-    surface: 'cream',
-  },
-];
-
-interface ResourceItem {
-  id: string;
-  sourceTag: string;
-  title: string;
-  description: string;
-  dateMeta: string;
-  courseTag: string;
-  courseCode: string;
+function toResource(article: Article): Resource {
+  return {
+    id: article.id,
+    title: article.title,
+    category: article.source,
+    description: article.summary,
+    courseCode: article.courseCode,
+    dateInfo: article.dateInfo,
+    url: article.url,
+  };
 }
-
-const STATISTICS_RESOURCES: ResourceItem[] = [
-  {
-    id: 'tidy-data',
-    sourceTag: 'JOURNAL OF STATISTICAL SOFTWARE',
-    title: 'Tidy Data',
-    description:
-      'Wickham presents a consistent structure for analysis-ready datasets. Organizing observations, variables and observational units makes data easier to reshape, model and visualize.',
-    dateMeta: 'Sep 12, 2014',
-    courseTag: 'Relevant to STAT 3355',
-    courseCode: 'STAT 3355',
-  },
-  {
-    id: 'conformal-prediction',
-    sourceTag: 'ARXIV',
-    title:
-      'A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification',
-    description:
-      'This tutorial introduces prediction sets and intervals that quantify uncertainty around model outputs. It combines practical theory with worked examples and Python notebooks.',
-    dateMeta: 'Jul 15, 2021',
-    courseTag: 'Relevant to STAT 3355',
-    courseCode: 'STAT 3355',
-  },
-];
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { topic } = useLocalSearchParams<{ topic?: string }>();
   const {
     saveResource,
     removeResource,
@@ -75,42 +44,34 @@ export default function SearchScreen() {
     isResourceInCourse,
     isResourceSaved,
   } = useSaved();
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(topic ?? null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
   const [justSavedItem, setJustSavedItem] = useState<Resource | null>(null);
 
-  const handleToggleSave = async (item: ResourceItem) => {
-    if (isResourceSaved(item.id)) {
-      await removeResource(item.id);
+  const activeCourse = selectedTopic ? findCourseByTopic(selectedTopic) : undefined;
+  const topicArticles = activeCourse ? getArticlesForCourse(activeCourse.code) : [];
+  const visibleArticles =
+    activeFilter === 'research'
+      ? topicArticles.filter((article) => article.kind === 'research')
+      : topicArticles;
+
+  const handleToggleSave = async (article: Article) => {
+    if (isResourceSaved(article.id)) {
+      await removeResource(article.id);
       return;
     }
 
-    const resource: Resource = {
-      id: item.id,
-      title: item.title,
-      category: item.sourceTag,
-      description: item.description,
-      courseCode: item.courseCode,
-      dateInfo: item.dateMeta,
-    };
-
+    const resource = toResource(article);
     await saveResource(resource);
     setJustSavedItem(resource);
   };
 
-  const handleAddToCourse = async (item: ResourceItem) => {
-    if (!isResourceSaved(item.id)) {
-      await saveResource({
-        id: item.id,
-        title: item.title,
-        category: item.sourceTag,
-        description: item.description,
-        courseCode: item.courseCode,
-        dateInfo: item.dateMeta,
-      });
+  const handleAddToCourse = async (article: Article) => {
+    if (!isResourceSaved(article.id)) {
+      await saveResource(toResource(article));
     }
 
-    addResourceToCourse(item.id, item.courseCode);
+    addResourceToCourse(article.id, article.courseCode);
   };
 
   const openReadingList = () => {
@@ -193,73 +154,59 @@ export default function SearchScreen() {
           </View>
 
           <ThemedText type="caption" color="muted" style={styles.verifiedCount}>
-            {STATISTICS_RESOURCES.length} verified resources
+            {visibleArticles.length} verified{' '}
+            {visibleArticles.length === 1 ? 'resource' : 'resources'}
+            {activeCourse ? ` for ${activeCourse.code}` : ''}
           </ThemedText>
 
           {/* Resource Cards List */}
           <View style={styles.resourceList}>
-            {STATISTICS_RESOURCES.map((item) => (
-              <View key={item.id} style={styles.resourceCard}>
-                <ThemedText type="caption" color="muted" style={styles.sourceTag}>
-                  {item.sourceTag}
-                </ThemedText>
-
-                <ThemedText type="title" style={styles.resourceTitle}>
-                  {item.title}
-                </ThemedText>
-
-                <ThemedText
-                  type="body"
-                  color="muted"
-                  style={styles.resourceDescription}
-                >
-                  {item.description}
-                </ThemedText>
-
-                <ThemedText type="caption" color="muted" style={styles.dateMeta}>
-                  {item.dateMeta}
-                </ThemedText>
-
-                <View style={styles.resourceFooter}>
-                  <ThemedText type="caption" style={{ color: Colors.primary }}>
-                    {item.courseTag}
-                  </ThemedText>
-
-                  <View style={styles.resourceActions}>
+            {visibleArticles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                actions={
+                  <>
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => handleToggleSave(item)}
+                      onPress={() => handleToggleSave(article)}
                       accessibilityRole="button"
                       accessibilityLabel={
-                        isResourceSaved(item.id)
-                          ? `Remove ${item.title} from your reading list`
-                          : `Save ${item.title} to your reading list`
+                        isResourceSaved(article.id)
+                          ? `Remove ${article.title} from your reading list`
+                          : `Save ${article.title} to your reading list`
                       }
                     >
                       <ThemedText type="label" style={{ color: Colors.primary }}>
-                        {isResourceSaved(item.id) ? 'Saved ✓' : 'Save'}
+                        {isResourceSaved(article.id) ? 'Saved ✓' : 'Save'}
                       </ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      disabled={isResourceInCourse(item.id, item.courseCode)}
-                      onPress={() => handleAddToCourse(item)}
+                      disabled={isResourceInCourse(article.id, article.courseCode)}
+                      onPress={() => handleAddToCourse(article)}
                       accessibilityRole="button"
                       accessibilityLabel={
-                        isResourceInCourse(item.id, item.courseCode)
-                          ? `${item.title} is in ${item.courseCode}`
-                          : `Add ${item.title} to ${item.courseCode}`
+                        isResourceInCourse(article.id, article.courseCode)
+                          ? `${article.title} is in ${article.courseCode}`
+                          : `Add ${article.title} to ${article.courseCode}`
                       }
                     >
                       <ThemedText type="label" style={{ color: Colors.primary }}>
-                        {isResourceInCourse(item.id, item.courseCode) ? 'Added ✓' : 'Add'}
+                        {isResourceInCourse(article.id, article.courseCode) ? 'Added ✓' : 'Add'}
                       </ThemedText>
                     </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
+                  </>
+                }
+              />
             ))}
           </View>
+
+          {visibleArticles.length === 0 ? (
+            <ThemedText type="body" color="muted">
+              No research papers filed under this topic yet.
+            </ThemedText>
+          ) : null}
         </ScrollView>
       ) : (
         /* --- Default Explore View --- */
@@ -283,15 +230,15 @@ export default function SearchScreen() {
           <View style={styles.section}>
             <ThemedText type="title">Recent searches</ThemedText>
             <View style={styles.recentList}>
-              {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
+              {COURSE_TOPICS.map((course) => (
                 <TouchableOpacity
-                  key={item}
+                  key={course.code}
                   style={styles.recentItem}
                   activeOpacity={0.7}
-                  onPress={() => setSelectedTopic(item)}
+                  onPress={() => setSelectedTopic(course.topic)}
                 >
                   <ThemedText type="label" style={{ color: Colors.primary }}>
-                    {item}
+                    {course.topic}
                   </ThemedText>
                   <Feather name="arrow-right" size={16} color={Colors.primary} />
                 </TouchableOpacity>
@@ -311,9 +258,21 @@ export default function SearchScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.coursesScroll}
             >
-              {COURSES.map((course) => (
-                <CourseCard key={course.code} {...course} />
-              ))}
+              {COURSE_TOPICS.map((course) => {
+                const articles = getArticlesForCourse(course.code);
+
+                return (
+                  <CourseCard
+                    key={course.code}
+                    code={course.code}
+                    icon={course.icon}
+                    resourceCount={`${articles.length} ${articles.length === 1 ? 'resource' : 'resources'}`}
+                    suggestedReads={`• ${course.topic}`}
+                    surface={course.surface}
+                    onPress={() => setSelectedTopic(course.topic)}
+                  />
+                );
+              })}
             </ScrollView>
           </View>
 
@@ -352,10 +311,37 @@ export default function SearchScreen() {
           {/* --- Latest Reporting --- */}
           <View style={styles.section}>
             <ThemedText type="title">Latest reporting</ThemedText>
-            <ThemedText type="caption" color="muted" style={styles.reportingSub}>
-              MIT NEWS • NEWS
-            </ThemedText>
-            <View style={styles.reportingPlaceholder} />
+            <View style={styles.reportingList}>
+              {COURSE_TOPICS.map((course) => {
+                const [latest] = getArticlesForCourse(course.code);
+                if (!latest) {
+                  return null;
+                }
+
+                return (
+                  <ArticleCard
+                    key={latest.id}
+                    article={latest}
+                    actions={
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleToggleSave(latest)}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          isResourceSaved(latest.id)
+                            ? `Remove ${latest.title} from your reading list`
+                            : `Save ${latest.title} to your reading list`
+                        }
+                      >
+                        <ThemedText type="label" style={{ color: Colors.primary }}>
+                          {isResourceSaved(latest.id) ? 'Saved ✓' : 'Save'}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    }
+                  />
+                );
+              })}
+            </View>
           </View>
         </ScrollView>
       )}
@@ -482,36 +468,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   resourceList: {
-    gap: Spacing.xl,
-  },
-  resourceCard: {
-    paddingBottom: Spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  sourceTag: {
-    letterSpacing: 0.5,
-  },
-  resourceTitle: {
-    lineHeight: 24,
-  },
-  resourceDescription: {
-    lineHeight: 22,
-  },
-  dateMeta: {
-    marginTop: 2,
-  },
-  resourceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  resourceActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.md,
   },
   section: {
     marginBottom: Spacing.xl + Spacing.sm,
@@ -556,15 +513,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingVertical: 12,
   },
-  reportingSub: {
-    marginTop: Spacing.xs,
-    letterSpacing: 0.5,
-  },
-  reportingPlaceholder: {
-    height: 100,
-    backgroundColor: '#F2F2FF',
-    borderRadius: Radius.md,
+  reportingList: {
     marginTop: Spacing.md,
+    gap: Spacing.md,
   },
   modalBackdrop: {
     flex: 1,

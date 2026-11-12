@@ -1,33 +1,25 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { CourseCard, type CourseCardProps } from '@/components/course-card';
+import { ArticleCard } from '@/components/article-card';
+import { CourseCard } from '@/components/course-card';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Layout, Spacing } from '@/constants/theme';
-
-const COURSES: CourseCardProps[] = [
-  {
-    code: 'CS 4375',
-    icon: require('@/assets/icons/course-ml.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 5 suggested reads',
-    surface: 'tint',
-  },
-  {
-    code: 'CS 3354',
-    icon: require('@/assets/icons/course-code.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 3 suggested reads',
-    surface: 'cream',
-  },
-];
+import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import { COURSE_TOPICS, getArticlesForCourse } from '@/data/articles';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  const openTopic = (topic: string) => {
+    router.push({ pathname: '/search', params: { topic } });
+  };
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
-      
       <View style={styles.intro}>
         <ThemedText type="caption" color="muted">
           Curated for your classroom
@@ -41,10 +33,63 @@ export default function HomeScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.courses}>
-        {COURSES.map((course) => (
-          <CourseCard key={course.code} {...course} />
-        ))}
+        {COURSE_TOPICS.map((course) => {
+          const articles = getArticlesForCourse(course.code);
+
+          return (
+            <CourseCard
+              key={course.code}
+              code={course.code}
+              icon={course.icon}
+              resourceCount={`${articles.length} ${articles.length === 1 ? 'resource' : 'resources'}`}
+              suggestedReads={`• ${course.topic}`}
+              surface={course.surface}
+              onPress={() => openTopic(course.topic)}
+            />
+          );
+        })}
       </ScrollView>
+
+      {COURSE_TOPICS.map((course) => {
+        const articles = getArticlesForCourse(course.code);
+
+        return (
+          <View key={course.code} style={styles.feedSection}>
+            <View style={styles.feedHeading}>
+              <View style={[styles.feedBadge, { backgroundColor: Colors[course.surface] }]}>
+                <View style={styles.feedBadgeIcon}>
+                  <Image
+                    source={course.icon}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="contain"
+                  />
+                </View>
+              </View>
+              <View style={styles.feedHeadingText}>
+                <ThemedText type="label">{course.code}</ThemedText>
+                <ThemedText type="meta" color="muted">
+                  {course.topic}
+                </ThemedText>
+              </View>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`See all ${course.topic} resources`}
+                onPress={() => openTopic(course.topic)}>
+                <ThemedText type="caption" style={styles.seeAll}>
+                  See all {articles.length}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            <View style={styles.feedList}>
+              {articles.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </View>
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -65,5 +110,34 @@ const styles = StyleSheet.create({
   },
   courses: {
     gap: 10,
+  },
+  feedSection: {
+    gap: Spacing.md,
+  },
+  feedHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  feedBadge: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+  },
+  feedBadgeIcon: {
+    width: 18,
+    height: 18,
+  },
+  feedHeadingText: {
+    flex: 1,
+    gap: 2,
+  },
+  seeAll: {
+    color: Colors.primary,
+  },
+  feedList: {
+    gap: Spacing.md,
   },
 });
