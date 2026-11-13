@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Radius, Shadow, Spacing } from '@/constants/theme';
 import type { Article } from '@/data/articles';
 
 type Accent = { fg: string; bg: string };
@@ -134,11 +134,12 @@ export function ArticleCard({
 const styles = StyleSheet.create({
   card: {
     padding: Spacing.lg,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     gap: Spacing.sm,
+    ...Shadow.card,
   },
   sourceRow: {
     flexDirection: 'row',

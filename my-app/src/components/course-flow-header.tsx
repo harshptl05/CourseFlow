@@ -75,6 +75,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
     backgroundColor: Colors.bg,
   },
   logo: {
