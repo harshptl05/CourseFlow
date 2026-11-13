@@ -320,19 +320,9 @@ export default function SettingsScreen() {
 
 // --- Notifications Subscreen ---
 if (activeView === 'notifications') {
-  return ( <View style={styles.screen}>
-  <View style={styles.subHeader}><TouchableOpacity
-      onPress={() => setActiveView('main')}
-      style={styles.backButton}
-      activeOpacity={0.7}>
-      <Feather name="chevron-left" size={20} color={Colors.primary} />
-      <ThemedText type="label" style={styles.headerTitle}>Notifications</ThemedText>
-    </TouchableOpacity>
-  </View>
-
-  <View style={styles.content}>
-    <View style={styles.interestCard}>
-        <ThemedText type="label">Allow Notifications</ThemedText>
+  return (<View style={styles.screen}>
+      <ThemedText type="title">Notifications</ThemedText>
+      <View style={styles.notificationRow}><ThemedText>Allow Notifications</ThemedText>
         <TouchableOpacity style={[styles.toggleBtn, !notificationsEnabled && styles.toggleBtnOff,]}
           onPress={() => setNotificationsEnabled(!notificationsEnabled)} activeOpacity={0.7}>
           <ThemedText type="label"> {notificationsEnabled ? 'On' : 'Off'}
@@ -345,7 +335,7 @@ if (activeView === 'notifications') {
           Save & Go Back
         </ThemedText>
       </TouchableOpacity>
-    </View></View>
+    </View>
   );
 }
 
