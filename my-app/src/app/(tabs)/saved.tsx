@@ -2,8 +2,9 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ShimmerButton } from '@/components/shimmer-button';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import { Colors, Layout, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useSaved } from '@/context/SavedContext';
 
 export default function SavedScreen() {
@@ -32,15 +33,14 @@ export default function SavedScreen() {
           <ThemedText type="body" color="muted" style={styles.emptyDescription}>
             Save a resource from Explore to add it to a course folder.
           </ThemedText>
-          <Pressable
-            style={styles.primaryButton}
-            accessibilityRole="button"
+          <ShimmerButton
+            accessibilityLabel="Explore resources"
             onPress={() => router.push('/search')}>
             <ThemedText type="label" style={styles.primaryButtonText}>
               Explore resources
             </ThemedText>
             <Feather name="arrow-right" size={16} color={Colors.white} />
-          </Pressable>
+          </ShimmerButton>
         </View>
       ) : (
         <View style={styles.resourceList}>
@@ -134,9 +134,12 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: Spacing.xl,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
     backgroundColor: Colors.white,
     gap: Spacing.md,
+    ...Shadow.card,
   },
   emptyDescription: {
     textAlign: 'center',
@@ -146,11 +149,12 @@ const styles = StyleSheet.create({
   },
   resourceCard: {
     padding: Spacing.lg,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     gap: Spacing.sm,
+    ...Shadow.card,
   },
   category: {
     letterSpacing: 0.5,
