@@ -3,13 +3,21 @@ import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { LibreBaskerville_400Regular } from '@expo-google-fonts/libre-baskerville/400Regular';
 import { useFonts } from 'expo-font';
-import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import {
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
 import { SavedProvider } from '@/context/SavedContext';
+import { useCourseFlowDB } from '@/db/store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,11 +41,29 @@ export default function RootLayout() {
     LibreBaskerville_400Regular,
   });
 
+  const { userProfile } = useCourseFlowDB();
+  const segments = useSegments();
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    if (!fontsLoaded && !fontError) return;
+    if (!navigationState?.key) return;
+
+    const inAuthScreen = segments[0] === 'auth';
+
+    if (!userProfile.isSignedIn && !inAuthScreen) {
+      router.replace('/auth');
+    } else if (userProfile.isSignedIn && inAuthScreen) {
+      router.replace('/');
+    }
+  }, [userProfile.isSignedIn, segments, fontsLoaded, fontError, navigationState?.key]);
 
   if (!fontsLoaded && !fontError) {
     return null;
