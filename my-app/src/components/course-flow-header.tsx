@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { UNREAD_NOTIFICATION_COUNT } from '@/app/notifications';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 import { getInitials, useCourseFlowDB } from '@/db/store';
@@ -39,15 +40,23 @@ export function CourseFlowHeader() {
         </View>
       </View>
 
-      {/* --- Right Actions (Bell, Dynamic Account Initials, Search) --- */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push('/settings')}
-          style={styles.iconBtn}
-        >
-          <Feather name="bell" size={18} color={Colors.muted} />
-        </TouchableOpacity>
+      <Link href="/notifications" asChild>
+        <Pressable
+          style={styles.action}
+          accessibilityRole="button"
+          accessibilityLabel={
+            UNREAD_NOTIFICATION_COUNT > 0
+              ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
+              : 'Notifications'
+          }>
+          <Image
+            source={require('@/assets/icons/bell.svg')}
+            style={styles.actionIcon}
+            contentFit="contain"
+          />
+          {UNREAD_NOTIFICATION_COUNT > 0 ? <View style={styles.badge} /> : null}
+        </Pressable>
+      </Link>
 
         <TouchableOpacity
           style={styles.avatarBadge}
@@ -77,7 +86,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
     backgroundColor: Colors.bg,
   },
   brandRow: {
@@ -105,12 +116,20 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: 4,
   },
-  avatarBadge: {
-    backgroundColor: '#F2F2FF',
-    borderRadius: Radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 42,
+  badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: Colors.bg,
+    backgroundColor: Colors.primary,
+  },
+  avatar: {
+    width: Layout.touchTarget,
+    height: Layout.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
