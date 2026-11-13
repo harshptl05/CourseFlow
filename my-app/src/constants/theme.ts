@@ -43,7 +43,25 @@ export const Radius = {
   sm: 8,
   md: 10,
   lg: 12,
+  xl: 16,
   pill: 18,
+} as const;
+
+export const Shadow = {
+  card: {
+    shadowColor: '#20212a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  raised: {
+    shadowColor: '#20212a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
 } as const;
 
 export const Layout = {
