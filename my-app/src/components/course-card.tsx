@@ -10,6 +10,7 @@ export type CourseCardProps = {
   resourceCount: string;
   suggestedReads: string;
   surface: 'tint' | 'cream';
+  onPress?: () => void;
 };
 
 export function CourseCard({
@@ -18,12 +19,14 @@ export function CourseCard({
   resourceCount,
   suggestedReads,
   surface,
+  onPress,
 }: CourseCardProps) {
   return (
     <Pressable
       style={[styles.card, { backgroundColor: Colors[surface] }]}
       accessibilityRole="button"
-      accessibilityLabel={`${code}, ${resourceCount}, ${suggestedReads}`}>
+      accessibilityLabel={`${code}, ${resourceCount}, ${suggestedReads}`}
+      onPress={onPress}>
       <View style={styles.heading}>
         <Image source={icon} style={styles.icon} contentFit="contain" />
         <ThemedText type="label">{code}</ThemedText>
