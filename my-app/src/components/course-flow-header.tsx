@@ -1,7 +1,8 @@
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, TouchableOpacity, View, Pressable } from 'react-native';
+import { useRouter, Link } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 import { UNREAD_NOTIFICATION_COUNT } from '@/app/notifications';
 import { ThemedText } from '@/components/themed-text';
@@ -40,23 +41,25 @@ export function CourseFlowHeader() {
         </View>
       </View>
 
-      <Link href="/notifications" asChild>
-        <Pressable
-          style={styles.action}
-          accessibilityRole="button"
-          accessibilityLabel={
-            UNREAD_NOTIFICATION_COUNT > 0
-              ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
-              : 'Notifications'
-          }>
-          <Image
-            source={require('@/assets/icons/bell.svg')}
-            style={styles.actionIcon}
-            contentFit="contain"
-          />
-          {UNREAD_NOTIFICATION_COUNT > 0 ? <View style={styles.badge} /> : null}
-        </Pressable>
-      </Link>
+      {/* --- Right Actions (Missing Wrapper Fixed Here) --- */}
+      <View style={styles.actionsRow}>
+        <Link href="/notifications" asChild>
+          <Pressable
+            style={styles.action}
+            accessibilityRole="button"
+            accessibilityLabel={
+              UNREAD_NOTIFICATION_COUNT > 0
+                ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
+                : 'Notifications'
+            }>
+            <Image
+              source={require('@/assets/icons/bell.svg')}
+              style={styles.actionIcon}
+              contentFit="contain"
+            />
+            {UNREAD_NOTIFICATION_COUNT > 0 ? <View style={styles.badge} /> : null}
+          </Pressable>
+        </Link>
 
         <TouchableOpacity
           style={styles.avatarBadge}
