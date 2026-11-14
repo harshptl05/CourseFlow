@@ -13,8 +13,14 @@ import { ArticleCard } from '@/components/article-card';
 import { ThemedText } from '@/components/themed-text';
 import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
-import { getArticlesForCourse, type Article } from '@/data/articles';
+import { COURSE_TOPICS, getArticlesForCourse, type Article } from '@/data/articles';
 import { useSaved, type Resource } from '@/context/SavedContext';
+
+const COURSE_NAMES: Record<string, string> = Object.fromEntries(
+  COURSE_TOPICS.map((course) => [course.code, course.title]),
+);
+
+const DEFAULT_COURSES = COURSE_TOPICS.map((course) => course.code);
 
 function toResource(article: Article): Resource {
   return {

@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   textInput: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,

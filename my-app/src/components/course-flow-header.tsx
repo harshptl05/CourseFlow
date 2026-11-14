@@ -2,10 +2,11 @@ import { StyleSheet, TouchableOpacity, View, Pressable } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 import { UNREAD_NOTIFICATION_COUNT } from '@/app/notifications';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Layout, Spacing } from '@/constants/theme';
+import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 import { getInitials, useCourseFlowDB } from '@/db/store';
 
 function getFormattedDate(): string {
@@ -29,7 +30,7 @@ export function CourseFlowHeader() {
     <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
       {/* --- Left Brand & Dynamic Date --- */}
       <View style={styles.brandRow}>
-        <Feather name="columns" size={20} color={Colors.accent} style={styles.logoIcon} />
+        <Feather name="Columns" size={20} color={Colors.primary} style={styles.logoIcon} />
         <View>
           <ThemedText type="title" style={styles.brandTitle}>
             CourseFlow
@@ -51,7 +52,11 @@ export function CourseFlowHeader() {
                 ? `Notifications, ${UNREAD_NOTIFICATION_COUNT} unread`
                 : 'Notifications'
             }>
-            <Feather name="bell" size={20} color={Colors.ink} />
+            <Image
+              source={require('@/assets/icons/bell.svg')}
+              style={styles.actionIcon}
+              contentFit="contain"
+            />
             {UNREAD_NOTIFICATION_COUNT > 0 ? <View style={styles.badge} /> : null}
           </Pressable>
         </Link>
@@ -114,12 +119,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: 4,
   },
-  action: {
-    width: Layout.touchTarget,
-    height: Layout.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   badge: {
     position: 'absolute',
     top: 10,
@@ -129,14 +128,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: Colors.bg,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
   },
   avatarBadge: {
-    width: Layout.touchTarget,
-    height: Layout.touchTarget,
+    backgroundColor: '#F2F2FF',
+    borderRadius: Radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Layout.touchTarget / 2,
-    backgroundColor: Colors.tint,
   },
 });

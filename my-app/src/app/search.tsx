@@ -38,7 +38,6 @@ function toResource(article: Article): Resource {
 
 export default function SearchScreen() {
   const router = useRouter();
-  const courseSearchRef = useRef<TextInputInstance>(null);
   const { topic } = useLocalSearchParams<{ topic?: string }>();
   const {
     saveResource,
@@ -117,6 +116,13 @@ export default function SearchScreen() {
     setSearchQuery('');
     setSelectedTopic(course.topic);
   };
+
+  const activeCourse = selectedTopic ? findCourseByTopic(selectedTopic) : undefined;
+  const topicArticles = activeCourse ? getArticlesForCourse(activeCourse.code) : [];
+  const visibleArticles =
+    activeFilter === 'research'
+      ? topicArticles.filter((article) => article.kind === 'research')
+      : topicArticles;
 
   const handleToggleSave = async (article: Article) => {
     if (isResourceSaved(article.id)) {
@@ -227,30 +233,13 @@ export default function SearchScreen() {
           ) : null}
 
           <ThemedText type="caption" color="muted" style={styles.verifiedCount}>
-            {customCourse
-              ? `${customCourseResources.length} saved ${
-                  customCourseResources.length === 1 ? 'resource' : 'resources'
-                }`
-              : `${visibleArticles.length} verified ${
-                  visibleArticles.length === 1 ? 'resource' : 'resources'
-                }${activeCourse ? ` for ${activeCourse.code}` : ''}`}
+            {visibleArticles.length} verified{' '}
+            {visibleArticles.length === 1 ? 'resource' : 'resources'}
+            {activeCourse ? ` for ${activeCourse.code}` : ''}
           </ThemedText>
 
           {/* Resource Cards List */}
           <View style={styles.resourceList}>
-            {customCourseResources.map((resource) => (
-              <View key={resource.id} style={styles.courseResult}>
-                <View style={styles.courseResultIcon}>
-                  <Feather name="file-text" size={18} color={Colors.primary} />
-                </View>
-                <View style={styles.courseResultText}>
-                  <ThemedText type="label">{resource.title}</ThemedText>
-                  <ThemedText type="caption" color="muted">
-                    {resource.category} · {resource.dateInfo}
-                  </ThemedText>
-                </View>
-              </View>
-            ))}
             {visibleArticles.map((article) => (
               <ArticleCard
                 key={article.id}
@@ -292,11 +281,9 @@ export default function SearchScreen() {
             ))}
           </View>
 
-          {visibleArticles.length === 0 && customCourseResources.length === 0 ? (
+          {visibleArticles.length === 0 ? (
             <ThemedText type="body" color="muted">
-              {customCourse
-                ? 'No materials have been added to this course yet.'
-                : 'No research papers filed under this topic yet.'}
+              No research papers filed under this topic yet.
             </ThemedText>
           ) : null}
         </ScrollView>
