@@ -17,6 +17,9 @@ export default function SavedScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.intro}>
+        <ThemedText type="caption" color="muted">
+          YOUR READING LIST
+        </ThemedText>
         <ThemedText type="display">Saved resources</ThemedText>
         <ThemedText type="body" color="muted">
           Keep useful material close and add it to the course folder where it belongs.

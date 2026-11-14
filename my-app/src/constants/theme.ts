@@ -1,13 +1,13 @@
 export const Colors = {
-  bg: '#fbfaf7',
-  ink: '#20211f',
-  muted: '#727873',
-  primary: '#006a4e',
-  tint: '#e8f2ee',
-  cream: '#fff1e2',
-  border: '#e7e5df',
+  bg: '#faf9f6',
+  ink: '#20212a',
+  muted: '#747988',
+  primary: '#5546c7',
+  tint: '#f0eeff',
+  cream: '#f7efdf',
+  border: '#e9e8e4',
   white: '#ffffff',
-  accent: '#e87500',
+  accent: '#8c5e1f',
 } as const;
 
 export type ThemeColor = keyof typeof Colors;
