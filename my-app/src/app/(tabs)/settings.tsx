@@ -584,7 +584,7 @@ export default function SettingsScreen() {
 
       {/* --- Footer Tagline --- */}
       <ThemedText type="caption" color="muted" style={styles.footerText}>
-        CourseFlow · A considered reading habit.
+        CourseFlow 
       </ThemedText>
     </ScrollView>
   );
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
   },
   profileCard: {
-    backgroundColor: '#F5EFE6',
+    backgroundColor: Colors.cream,
     borderRadius: Radius.md,
     padding: Spacing.lg,
     gap: Spacing.xs,
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   interestCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   toggleBtn: {
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
     paddingVertical: 10,
     paddingHorizontal: 28,
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: ITEM_HEIGHT,
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
   },
   wheelContent: {
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   primaryActionBtn: {
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
     paddingVertical: 14,
     alignItems: 'center',

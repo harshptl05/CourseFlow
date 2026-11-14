@@ -11,6 +11,7 @@ import {
 
 import { ArticleCard } from '@/components/article-card';
 import { ThemedText } from '@/components/themed-text';
+import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 import { COURSE_TOPICS, getArticlesForCourse, type Article } from '@/data/articles';
 import { useSaved, type Resource } from '@/context/SavedContext';
@@ -50,13 +51,10 @@ export default function CoursesScreen() {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
 
-  const courseCodes = Array.from(
-    new Set([
-      ...DEFAULT_COURSES,
-      ...savedResources.map((resource) => resource.courseCode),
-      ...Object.values(courseAssignments),
-      ...courses.map((course) => course.id),
-    ]),
+  const courseCodes = getCourseCodes(
+    savedResources.map((resource) => resource.courseCode),
+    courseAssignments,
+    courses.map((course) => course.id),
   );
 
   const resetCourseForm = () => {
@@ -113,9 +111,6 @@ export default function CoursesScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.intro}>
-        <ThemedText type="caption" color="muted">
-          YOUR LEARNING LIBRARY
-        </ThemedText>
         <ThemedText type="display">Your courses</ThemedText>
         <ThemedText type="body" color="muted">
           Materials you add are organized in their course folders.
