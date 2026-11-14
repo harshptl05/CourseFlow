@@ -199,10 +199,10 @@ export default function AuthScreen() {
             activeOpacity={0.85}
             onPress={handleSubmit}
           >
-            <ThemedText type="label" style={{ color: Colors.primary }}>
+            <ThemedText type="label" style={{ color: Colors.white }}>
               {mode === 'signIn' ? 'Sign in to CourseFlow' : 'Create account & continue'}
             </ThemedText>
-            <Feather name="arrow-right" size={16} color={Colors.primary} />
+            <Feather name="arrow-right" size={16} color={Colors.white} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -243,11 +243,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   tabBtnActive: {
-    backgroundColor: '#F2F2FF',
-    borderColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
+    borderColor: Colors.tint,
   },
   formCard: {
-    backgroundColor: '#F5EFE6',
+    backgroundColor: Colors.cream,
     borderRadius: Radius.md,
     padding: Spacing.lg,
     gap: Spacing.lg,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     color: '#C0392B',
   },
   submitBtn: {
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.primary,
     borderRadius: Radius.md,
     paddingVertical: 15,
     flexDirection: 'row',

@@ -29,7 +29,7 @@ export function CourseFlowHeader() {
     <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
       {/* --- Left Brand & Dynamic Date --- */}
       <View style={styles.brandRow}>
-        <Feather name="columns" size={20} color={Colors.primary} style={styles.logoIcon} />
+        <Feather name="columns" size={20} color={Colors.accent} style={styles.logoIcon} />
         <View>
           <ThemedText type="title" style={styles.brandTitle}>
             CourseFlow
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: Colors.bg,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.accent,
   },
   avatarBadge: {
     width: Layout.touchTarget,

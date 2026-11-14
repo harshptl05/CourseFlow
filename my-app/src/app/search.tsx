@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   searchPill: {
     flexDirection: 'row',
     gap: Spacing.md,
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
     minHeight: 50,
     paddingHorizontal: Spacing.md,
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   activeSearchPill: {
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
     paddingVertical: 14,
     alignItems: 'center',
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterTabActive: {
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
   },
   verifiedCount: {
     marginBottom: Spacing.lg,
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   pubPillBtn: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#F2F2FF',
+    backgroundColor: Colors.tint,
     borderRadius: Radius.md,
     paddingVertical: 12,
   },
