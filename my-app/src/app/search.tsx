@@ -9,68 +9,37 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
-import { CourseCard, type CourseCardProps } from '@/components/course-card';
+import { ArticleCard } from '@/components/article-card';
+import { CourseCard } from '@/components/course-card';
 import { ThemedText } from '@/components/themed-text';
-import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import {
+  COURSE_TOPICS,
+  findCourseByTopic,
+  getArticlesForCourse,
+  type Article,
+} from '@/data/articles';
 import { useSaved, type Resource } from '@/context/SavedContext';
 
-const COURSES: CourseCardProps[] = [
-  {
-    code: 'CS 4375',
-    icon: require('@/assets/icons/course-ml.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 5 suggested reads',
-    surface: 'tint',
-  },
-  {
-    code: 'CS 3354',
-    icon: require('@/assets/icons/course-code.svg'),
-    resourceCount: '1 resource',
-    suggestedReads: '• 3 suggested reads',
-    surface: 'cream',
-  },
-];
-
-interface ResourceItem {
-  id: string;
-  sourceTag: string;
-  title: string;
-  description: string;
-  dateMeta: string;
-  courseTag: string;
-  courseCode: string;
+function toResource(article: Article): Resource {
+  return {
+    id: article.id,
+    title: article.title,
+    category: article.source,
+    description: article.summary,
+    courseCode: article.courseCode,
+    dateInfo: article.dateInfo,
+    url: article.url,
+  };
 }
-
-const STATISTICS_RESOURCES: ResourceItem[] = [
-  {
-    id: 'tidy-data',
-    sourceTag: 'JOURNAL OF STATISTICAL SOFTWARE',
-    title: 'Tidy Data',
-    description:
-      'Wickham presents a consistent structure for analysis-ready datasets. Organizing observations, variables and observational units makes data easier to reshape, model and visualize.',
-    dateMeta: 'Sep 12, 2014',
-    courseTag: 'Relevant to STAT 3355',
-    courseCode: 'STAT 3355',
-  },
-  {
-    id: 'conformal-prediction',
-    sourceTag: 'ARXIV',
-    title:
-      'A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification',
-    description:
-      'This tutorial introduces prediction sets and intervals that quantify uncertainty around model outputs. It combines practical theory with worked examples and Python notebooks.',
-    dateMeta: 'Jul 15, 2021',
-    courseTag: 'Relevant to STAT 3355',
-    courseCode: 'STAT 3355',
-  },
-];
 
 export default function SearchScreen() {
   const router = useRouter();
+  const courseSearchRef = useRef<TextInputInstance>(null);
+  const { topic } = useLocalSearchParams<{ topic?: string }>();
   const {
     saveResource,
     removeResource,
@@ -81,65 +50,91 @@ export default function SearchScreen() {
     courseAssignments,
     courses,
   } = useSaved();
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(topic ?? null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'research'>('all');
   const [justSavedItem, setJustSavedItem] = useState<Resource | null>(null);
-  const [courseSearch, setCourseSearch] = useState('');
-  const courseSearchRef = useRef<TextInputInstance>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const focusSearchWhenMounted = useRef(false);
 
-  const courseCodes = getCourseCodes(
-    savedResources.map((resource) => resource.courseCode),
-    courseAssignments,
-    courses.map((course) => course.id),
-  );
-  const query = courseSearch.trim().toLocaleLowerCase();
-  const matchingCourses = query
-    ? courseCodes
-        .map((code) => {
-          const course = courses.find((item) => item.id === code);
-          return {
-            code,
-            title: course?.title ?? COURSE_NAMES[code] ?? 'Course materials',
-            description: course?.description ?? '',
-          };
+  const activeCourse = selectedTopic ? findCourseByTopic(selectedTopic) : undefined;
+  const customCourse = selectedTopic
+    ? courses.find((course) => course.id === selectedTopic)
+    : undefined;
+  const selectedCourseCode = activeCourse?.code ?? customCourse?.id;
+  const topicArticles = selectedCourseCode ? getArticlesForCourse(selectedCourseCode) : [];
+  const visibleArticles =
+    activeFilter === 'research'
+      ? topicArticles.filter((article) => article.kind === 'research')
+      : topicArticles;
+  const customCourseResources = customCourse
+    ? savedResources.filter(
+        (resource) => courseAssignments[resource.id] === customCourse.id,
+      )
+    : [];
+  const courseOptions = [
+    ...COURSE_TOPICS.map((course) => ({
+      code: course.code,
+      title: course.title,
+      topic: course.topic,
+      description: course.topic,
+    })),
+    ...courses
+      .filter((course) => !COURSE_TOPICS.some((topic) => topic.code === course.id))
+      .map((course) => ({
+        code: course.id,
+        title: course.title,
+        topic: course.id,
+        description: course.description,
+      })),
+  ];
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const matchingCourses = normalizedQuery
+    ? courseOptions
+        .map((course, index) => {
+          const fields = [course.code, course.title, course.topic, course.description]
+            .map((field) => field.toLowerCase());
+          const score = Math.max(
+            ...fields.map((field) =>
+              field === normalizedQuery
+                ? 3
+                : field.startsWith(normalizedQuery)
+                  ? 2
+                  : field.includes(normalizedQuery)
+                    ? 1
+                    : 0,
+            ),
+          );
+          return { course, index, score };
         })
-        .filter(({ code, title, description }) =>
-          `${code} ${title} ${description}`.toLocaleLowerCase().includes(query),
-        )
+        .filter((result) => result.score > 0)
+        .sort((left, right) => right.score - left.score || left.index - right.index)
+        .slice(0, 5)
+        .map((result) => result.course)
     : [];
 
-  const handleToggleSave = async (item: ResourceItem) => {
-    if (isResourceSaved(item.id)) {
-      await removeResource(item.id);
+  const selectCourse = (course: (typeof courseOptions)[number]) => {
+    setActiveFilter('all');
+    setSearchQuery('');
+    setSelectedTopic(course.topic);
+  };
+
+  const handleToggleSave = async (article: Article) => {
+    if (isResourceSaved(article.id)) {
+      await removeResource(article.id);
       return;
     }
 
-    const resource: Resource = {
-      id: item.id,
-      title: item.title,
-      category: item.sourceTag,
-      description: item.description,
-      courseCode: item.courseCode,
-      dateInfo: item.dateMeta,
-    };
-
+    const resource = toResource(article);
     await saveResource(resource);
     setJustSavedItem(resource);
   };
 
-  const handleAddToCourse = async (item: ResourceItem) => {
-    if (!isResourceSaved(item.id)) {
-      await saveResource({
-        id: item.id,
-        title: item.title,
-        category: item.sourceTag,
-        description: item.description,
-        courseCode: item.courseCode,
-        dateInfo: item.dateMeta,
-      });
+  const handleAddToCourse = async (article: Article) => {
+    if (!isResourceSaved(article.id)) {
+      await saveResource(toResource(article));
     }
 
-    addResourceToCourse(item.id, item.courseCode);
+    addResourceToCourse(article.id, article.courseCode);
   };
 
   const openReadingList = () => {
@@ -166,7 +161,7 @@ export default function SearchScreen() {
         >
           <Feather name="chevron-left" size={20} color={Colors.primary} />
           <ThemedText type="label" style={styles.headerTitle}>
-            {selectedTopic ?? 'Explore'}
+            {customCourse?.title ?? selectedTopic ?? 'Explore'}
           </ThemedText>
         </TouchableOpacity>
 
@@ -175,6 +170,7 @@ export default function SearchScreen() {
           accessibilityRole="button"
           accessibilityLabel="Search courses"
           onPress={() => {
+            focusSearchWhenMounted.current = selectedTopic !== null;
             setSelectedTopic(null);
             courseSearchRef.current?.focus();
           }}>
@@ -200,108 +196,116 @@ export default function SearchScreen() {
           </TouchableOpacity>
 
           {/* Filter Tabs */}
-          <View style={styles.filterRow}>
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'all' && styles.filterTabActive,
-              ]}
-              activeOpacity={0.8}
-              onPress={() => setActiveFilter('all')}
-            >
-              <ThemedText type="label" style={{ color: Colors.primary }}>
-                All material
-              </ThemedText>
-            </TouchableOpacity>
+          {!customCourse ? (
+            <View style={styles.filterRow}>
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  activeFilter === 'all' && styles.filterTabActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setActiveFilter('all')}
+              >
+                <ThemedText type="label" style={{ color: Colors.primary }}>
+                  All material
+                </ThemedText>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                activeFilter === 'research' && styles.filterTabActive,
-              ]}
-              activeOpacity={0.8}
-              onPress={() => setActiveFilter('research')}
-            >
-              <ThemedText type="label" style={{ color: Colors.primary }}>
-                Research only
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  activeFilter === 'research' && styles.filterTabActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setActiveFilter('research')}
+              >
+                <ThemedText type="label" style={{ color: Colors.primary }}>
+                  Research only
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <ThemedText type="caption" color="muted" style={styles.verifiedCount}>
-            {STATISTICS_RESOURCES.length} verified resources
+            {customCourse
+              ? `${customCourseResources.length} saved ${
+                  customCourseResources.length === 1 ? 'resource' : 'resources'
+                }`
+              : `${visibleArticles.length} verified ${
+                  visibleArticles.length === 1 ? 'resource' : 'resources'
+                }${activeCourse ? ` for ${activeCourse.code}` : ''}`}
           </ThemedText>
 
           {/* Resource Cards List */}
           <View style={styles.resourceList}>
-            {STATISTICS_RESOURCES.map((item) => (
-              <View key={item.id} style={styles.resourceCard}>
-                <ThemedText type="caption" color="muted" style={styles.sourceTag}>
-                  {item.sourceTag}
-                </ThemedText>
-
-                <ThemedText type="title" style={styles.resourceTitle}>
-                  {item.title}
-                </ThemedText>
-
-                <ThemedText
-                  type="body"
-                  color="muted"
-                  style={styles.resourceDescription}
-                >
-                  {item.description}
-                </ThemedText>
-
-                <ThemedText type="caption" color="muted" style={styles.dateMeta}>
-                  {item.dateMeta}
-                </ThemedText>
-
-                <View style={styles.resourceFooter}>
-                  <ThemedText type="caption" style={{ color: Colors.primary }}>
-                    {item.courseTag}
+            {customCourseResources.map((resource) => (
+              <View key={resource.id} style={styles.courseResult}>
+                <View style={styles.courseResultIcon}>
+                  <Feather name="file-text" size={18} color={Colors.primary} />
+                </View>
+                <View style={styles.courseResultText}>
+                  <ThemedText type="label">{resource.title}</ThemedText>
+                  <ThemedText type="caption" color="muted">
+                    {resource.category} · {resource.dateInfo}
                   </ThemedText>
-
-                  <View style={styles.resourceActions}>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => handleToggleSave(item)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        isResourceSaved(item.id)
-                          ? `Remove ${item.title} from your reading list`
-                          : `Save ${item.title} to your reading list`
-                      }
-                    >
-                      <ThemedText type="label" style={{ color: Colors.primary }}>
-                        {isResourceSaved(item.id) ? 'Saved ✓' : 'Save'}
-                      </ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      disabled={isResourceInCourse(item.id, item.courseCode)}
-                      onPress={() => handleAddToCourse(item)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        isResourceInCourse(item.id, item.courseCode)
-                          ? `${item.title} is in ${item.courseCode}`
-                          : `Add ${item.title} to ${item.courseCode}`
-                      }
-                    >
-                      <ThemedText type="label" style={{ color: Colors.primary }}>
-                        {isResourceInCourse(item.id, item.courseCode) ? 'Added ✓' : 'Add'}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  </View>
                 </View>
               </View>
             ))}
+            {visibleArticles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                actions={
+                  <>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleToggleSave(article)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isResourceSaved(article.id)
+                          ? `Remove ${article.title} from your reading list`
+                          : `Save ${article.title} to your reading list`
+                      }
+                    >
+                      <ThemedText type="label" style={{ color: Colors.primary }}>
+                        {isResourceSaved(article.id) ? 'Saved ✓' : 'Save'}
+                      </ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      disabled={isResourceInCourse(article.id, article.courseCode)}
+                      onPress={() => handleAddToCourse(article)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        isResourceInCourse(article.id, article.courseCode)
+                          ? `${article.title} is in ${article.courseCode}`
+                          : `Add ${article.title} to ${article.courseCode}`
+                      }
+                    >
+                      <ThemedText type="label" style={{ color: Colors.primary }}>
+                        {isResourceInCourse(article.id, article.courseCode) ? 'Added ✓' : 'Add'}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </>
+                }
+              />
+            ))}
           </View>
+
+          {visibleArticles.length === 0 && customCourseResources.length === 0 ? (
+            <ThemedText type="body" color="muted">
+              {customCourse
+                ? 'No materials have been added to this course yet.'
+                : 'No research papers filed under this topic yet.'}
+            </ThemedText>
+          ) : null}
         </ScrollView>
       ) : (
         /* --- Default Explore View --- */
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* --- Hero Section --- */}
           <ThemedText type="display" style={styles.heroTitle}>
@@ -309,103 +313,77 @@ export default function SearchScreen() {
           </ThemedText>
 
           <View style={styles.searchPill}>
-            <Feather name="search" size={18} color={Colors.muted} />
+            <Feather name="search" size={16} color={Colors.primary} />
             <TextInput
-              ref={courseSearchRef}
-              value={courseSearch}
-              onChangeText={setCourseSearch}
-              placeholder="Search by course title, ID, or description"
-              placeholderTextColor={Colors.muted}
+              ref={(input) => {
+                courseSearchRef.current = input;
+                if (input && focusSearchWhenMounted.current) {
+                  input.focus();
+                  focusSearchWhenMounted.current = false;
+                }
+              }}
               style={styles.searchInput}
-              accessibilityLabel="Search your courses"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search courses by name or code"
+              placeholderTextColor={Colors.primary}
+              accessibilityLabel="Search courses by name or code"
               returnKeyType="search"
-              autoCapitalize="none"
-              autoCorrect={false}
             />
-            {courseSearch.length > 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Clear course search"
-                hitSlop={8}
-                onPress={() => setCourseSearch('')}>
-                <Feather name="x-circle" size={18} color={Colors.muted} />
-              </Pressable>
-            ) : null}
           </View>
 
-          {courseSearch.trim() ? (
+          {normalizedQuery ? (
             <View style={styles.courseSearchResults}>
               <ThemedText type="caption" color="muted">
-                {matchingCourses.length === 1
-                  ? '1 course found'
-                  : `${matchingCourses.length} courses found`}
+                {matchingCourses.length
+                  ? 'Matching courses'
+                  : 'No matching courses found'}
               </ThemedText>
-              {matchingCourses.length > 0 ? (
-                <View style={styles.courseResultList}>
-                  {matchingCourses.map((course) => {
-                    const resourceCount = savedResources.filter(
-                      (resource) => courseAssignments[resource.id] === course.code,
-                    ).length;
-
-                    return (
-                      <Pressable
-                        key={course.code}
-                        style={styles.courseResult}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Open ${course.title}, ${course.code}`}
-                        onPress={() => router.navigate('/(tabs)/courses')}>
-                        <View style={styles.courseResultIcon}>
-                          <Feather name="book-open" size={18} color={Colors.primary} />
-                        </View>
-                        <View style={styles.courseResultText}>
-                          <ThemedText type="label">{course.title}</ThemedText>
-                          <ThemedText type="caption" color="muted">
-                            {course.code} · {resourceCount}{' '}
-                            {resourceCount === 1 ? 'resource' : 'resources'}
-                          </ThemedText>
-                          {course.description ? (
-                            <ThemedText
-                              type="caption"
-                              color="muted"
-                              numberOfLines={2}>
-                              {course.description}
-                            </ThemedText>
-                          ) : null}
-                        </View>
-                        <Feather name="arrow-right" size={17} color={Colors.primary} />
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={styles.noCourseResults}>
-                  <ThemedText type="label">No matching courses</ThemedText>
-                  <ThemedText type="caption" color="muted">
-                    Search using a title, course ID, or description from Your courses.
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-          ) : (
-            <>
-              {/* --- Recent Searches --- */}
-              <View style={styles.section}>
-                <ThemedText type="title">Recent searches</ThemedText>
-                <View style={styles.recentList}>
-                  {['Machine Learning', 'Software Engineering', 'Statistics'].map((item) => (
-                    <TouchableOpacity
-                      key={item}
-                      style={styles.recentItem}
-                      activeOpacity={0.7}
-                      onPress={() => setSelectedTopic(item)}>
-                      <ThemedText type="label" style={{ color: Colors.primary }}>
-                        {item}
+              <View style={styles.courseResultList}>
+                {matchingCourses.map((course) => (
+                  <TouchableOpacity
+                    key={course.code}
+                    style={styles.courseResult}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${course.title}, ${course.code}`}
+                    onPress={() => selectCourse(course)}>
+                    <View style={styles.courseResultIcon}>
+                      <Feather name="book-open" size={18} color={Colors.primary} />
+                    </View>
+                    <View style={styles.courseResultText}>
+                      <ThemedText type="label">{course.title}</ThemedText>
+                      <ThemedText type="caption" color="muted">
+                        {course.code}
+                        {course.description ? ` · ${course.description}` : ''}
                       </ThemedText>
-                      <Feather name="arrow-right" size={16} color={Colors.primary} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={Colors.muted} />
+                  </TouchableOpacity>
+                ))}
               </View>
+            </View>
+          ) : null}
+
+          {/* --- Recent Searches --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Recent searches</ThemedText>
+            <View style={styles.recentList}>
+              {COURSE_TOPICS.map((course) => (
+                <TouchableOpacity
+                  key={course.code}
+                  style={styles.recentItem}
+                  activeOpacity={0.7}
+                  onPress={() => setSelectedTopic(course.topic)}
+                >
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    {course.topic}
+                  </ThemedText>
+                  <Feather name="arrow-right" size={16} color={Colors.primary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
               {/* --- Topic Collections --- */}
               <View style={styles.section}>
@@ -414,18 +392,96 @@ export default function SearchScreen() {
                   For your courses
                 </ThemedText>
 
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.coursesScroll}>
-                  {COURSES.map((course) => (
-                    <CourseCard key={course.code} {...course} />
-                  ))}
-                </ScrollView>
-              </View>
-            </>
-          )}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.coursesScroll}
+            >
+              {COURSE_TOPICS.map((course) => {
+                const articles = getArticlesForCourse(course.code);
 
+                return (
+                  <CourseCard
+                    key={course.code}
+                    code={course.code}
+                    icon={course.icon}
+                    resourceCount={`${articles.length} ${articles.length === 1 ? 'resource' : 'resources'}`}
+                    suggestedReads={`• ${course.topic}`}
+                    surface={course.surface}
+                    onPress={() => setSelectedTopic(course.topic)}
+                  />
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* --- Featured Publishers --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Featured publishers</ThemedText>
+
+            <View style={styles.publisherGrid}>
+              <View style={styles.pubRow}>
+                <TouchableOpacity style={styles.pubTextBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    MIT News
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pubTextBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    Nature
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.pubRow}>
+                <TouchableOpacity style={styles.pubPillBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    News
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pubPillBtn}>
+                  <ThemedText type="label" style={{ color: Colors.primary }}>
+                    Research
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* --- Latest Reporting --- */}
+          <View style={styles.section}>
+            <ThemedText type="title">Latest reporting</ThemedText>
+            <View style={styles.reportingList}>
+              {COURSE_TOPICS.map((course) => {
+                const [latest] = getArticlesForCourse(course.code);
+                if (!latest) {
+                  return null;
+                }
+
+                return (
+                  <ArticleCard
+                    key={latest.id}
+                    article={latest}
+                    actions={
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleToggleSave(latest)}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          isResourceSaved(latest.id)
+                            ? `Remove ${latest.title} from your reading list`
+                            : `Save ${latest.title} to your reading list`
+                        }
+                      >
+                        <ThemedText type="label" style={{ color: Colors.primary }}>
+                          {isResourceSaved(latest.id) ? 'Saved ✓' : 'Save'}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    }
+                  />
+                );
+              })}
+            </View>
+          </View>
         </ScrollView>
       )}
 
@@ -595,36 +651,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   resourceList: {
-    gap: Spacing.xl,
-  },
-  resourceCard: {
-    paddingBottom: Spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  sourceTag: {
-    letterSpacing: 0.5,
-  },
-  resourceTitle: {
-    lineHeight: 24,
-  },
-  resourceDescription: {
-    lineHeight: 22,
-  },
-  dateMeta: {
-    marginTop: 2,
-  },
-  resourceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  resourceActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.md,
   },
   section: {
     marginBottom: Spacing.xl + Spacing.sm,
@@ -647,6 +674,31 @@ const styles = StyleSheet.create({
     paddingRight: Layout.gutter,
     marginHorizontal: -Layout.gutter,
     paddingLeft: Layout.gutter,
+  },
+  publisherGrid: {
+    marginTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  pubRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: Spacing.md,
+  },
+  pubTextBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  pubPillBtn: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#F2F2FF',
+    borderRadius: Radius.md,
+    paddingVertical: 12,
+  },
+  reportingList: {
+    marginTop: Spacing.md,
+    gap: Spacing.md,
   },
   modalBackdrop: {
     flex: 1,

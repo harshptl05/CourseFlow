@@ -9,13 +9,36 @@ import {
   View,
 } from 'react-native';
 
+import { ArticleCard } from '@/components/article-card';
 import { ThemedText } from '@/components/themed-text';
 import { COURSE_NAMES, getCourseCodes } from '@/constants/courses';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
-import { useSaved } from '@/context/SavedContext';
+import { getArticlesForCourse, type Article } from '@/data/articles';
+import { useSaved, type Resource } from '@/context/SavedContext';
+
+function toResource(article: Article): Resource {
+  return {
+    id: article.id,
+    title: article.title,
+    category: article.source,
+    description: article.summary,
+    courseCode: article.courseCode,
+    dateInfo: article.dateInfo,
+    url: article.url,
+  };
+}
 
 export default function CoursesScreen() {
-  const { savedResources, courseAssignments, courses, addCourse } = useSaved();
+  const {
+    savedResources,
+    courseAssignments,
+    courses,
+    addCourse,
+    saveResource,
+    removeResource,
+    addResourceToCourse,
+    isResourceSaved,
+  } = useSaved();
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [title, setTitle] = useState('');
   const [courseId, setCourseId] = useState('');
@@ -59,15 +82,29 @@ export default function CoursesScreen() {
     setShowAddCourse(false);
   };
 
+  const handleToggleSave = async (article: Article) => {
+    if (isResourceSaved(article.id)) {
+      await removeResource(article.id);
+      return;
+    }
+
+    await saveResource(toResource(article));
+  };
+
+  const handleAddToFolder = async (article: Article, courseCode: string) => {
+    if (!isResourceSaved(article.id)) {
+      await saveResource(toResource(article));
+    }
+
+    addResourceToCourse(article.id, courseCode);
+  };
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.intro}>
-        <ThemedText type="caption" color="muted">
-          YOUR LEARNING LIBRARY
-        </ThemedText>
         <ThemedText type="display">Your courses</ThemedText>
         <ThemedText type="body" color="muted">
           Materials you add are organized in their course folders.
@@ -88,6 +125,9 @@ export default function CoursesScreen() {
           const course = courses.find((item) => item.id === courseCode);
           const resources = savedResources.filter(
             (resource) => courseAssignments[resource.id] === courseCode,
+          );
+          const suggested = getArticlesForCourse(courseCode).filter(
+            (article) => courseAssignments[article.id] !== courseCode,
           );
 
           return (
@@ -117,6 +157,9 @@ export default function CoursesScreen() {
 
               {resources.length > 0 ? (
                 <View style={styles.materialList}>
+                  <ThemedText type="label" style={styles.sectionHeading}>
+                    Your materials
+                  </ThemedText>
                   {resources.map((resource) => (
                     <View key={resource.id} style={styles.material}>
                       <Feather name="file-text" size={17} color={Colors.accent} />
@@ -137,6 +180,51 @@ export default function CoursesScreen() {
                   No materials in this folder yet.
                 </ThemedText>
               )}
+
+              {suggested.length > 0 ? (
+                <View style={styles.suggestedSection}>
+                  <ThemedText type="label">Suggested for this course</ThemedText>
+                  <ThemedText type="caption" color="muted">
+                    {suggested.length} curated{' '}
+                    {suggested.length === 1 ? 'resource' : 'resources'}
+                  </ThemedText>
+
+                  <View style={styles.suggestedList}>
+                    {suggested.map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        actions={
+                          <>
+                            <Pressable
+                              accessibilityRole="button"
+                              hitSlop={8}
+                              accessibilityLabel={
+                                isResourceSaved(article.id)
+                                  ? `Remove ${article.title} from your reading list`
+                                  : `Save ${article.title} to your reading list`
+                              }
+                              onPress={() => handleToggleSave(article)}>
+                              <ThemedText type="label" style={styles.linkAction}>
+                                {isResourceSaved(article.id) ? 'Saved ✓' : 'Save'}
+                              </ThemedText>
+                            </Pressable>
+                            <Pressable
+                              accessibilityRole="button"
+                              hitSlop={8}
+                              accessibilityLabel={`Add ${article.title} to ${courseCode}`}
+                              onPress={() => handleAddToFolder(article, courseCode)}>
+                              <ThemedText type="label" style={styles.linkAction}>
+                                Add to folder
+                              </ThemedText>
+                            </Pressable>
+                          </>
+                        }
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </View>
           );
         })}
@@ -282,8 +370,26 @@ const styles = StyleSheet.create({
   },
   materialList: {
     marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+  },
+  sectionHeading: {
+    marginBottom: Spacing.xs,
+  },
+  suggestedSection: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: Spacing.xs,
+  },
+  suggestedList: {
+    marginTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  linkAction: {
+    color: Colors.primary,
   },
   material: {
     flexDirection: 'row',

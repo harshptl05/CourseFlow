@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -14,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
-import { useCourseFlowDB } from '@/db/store';
+import { getInitials, useCourseFlowDB } from '@/db/store';
 
 const ITEM_HEIGHT = 44;
 
@@ -42,7 +43,8 @@ const TIME_SLOTS = [
 export default function SettingsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'interests' | 'dailyBrief' | 'notifications'>('main');  
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const timeScrollRef = useRef<ScrollView>(null);
 
@@ -51,11 +53,20 @@ export default function SettingsScreen() {
     toggleInterest,
     dailyBriefEnabled,
     dailyBriefTime,
+    userProfile,
     toggleDailyBrief,
     setDailyBriefTime,
+    updateUserProfile,
+    signOut,
   } = useCourseFlowDB();
 
   const [pendingTime, setPendingTime] = useState<string>(dailyBriefTime);
+
+  // Account form local state
+  const [nameInput, setNameInput] = useState(userProfile.name);
+  const [universityInput, setUniversityInput] = useState(userProfile.university);
+  const [gmailInput, setGmailInput] = useState(userProfile.gmail);
+  const [savedBanner, setSavedBanner] = useState(false);
 
   // Reset to the main Settings view whenever the Settings tab is pressed or re-entered
   useEffect(() => {
@@ -80,12 +91,20 @@ export default function SettingsScreen() {
     setActiveView('dailyBrief');
   };
 
+  const openAccount = () => {
+    setNameInput(userProfile.name);
+    setUniversityInput(userProfile.university);
+    setGmailInput(userProfile.gmail);
+    setSavedBanner(false);
+    setActiveView('account');
+  };
+
   const SETTINGS_LINKS = [
-    { label: 'Notifications', onPress: () => {} },
+    { label: 'Notifications', onPress: () => setActiveView('notifications') },
     { label: 'Daily Brief preferences', onPress: openDailyBrief },
     { label: 'Content interests', onPress: () => setActiveView('interests') },
     { label: 'Manage courses', onPress: () => router.push('/courses') },
-    { label: 'Account', onPress: () => {} },
+    { label: 'Account', onPress: openAccount },
   ];
 
   const handleTimeScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -111,6 +130,136 @@ export default function SettingsScreen() {
     setShowConfirmModal(false);
     setActiveView('main');
   };
+
+  const handleSaveAccount = () => {
+    updateUserProfile({
+      name: nameInput.trim() || 'Educator',
+      university: universityInput.trim(),
+      gmail: gmailInput.trim(),
+    });
+    setSavedBanner(true);
+    setTimeout(() => {
+      setSavedBanner(false);
+      setActiveView('main');
+    }, 600);
+  };
+
+  const handleSignOut = () => {
+    signOut();
+    setActiveView('main');
+    router.replace('/auth');
+  };
+
+  /* --- Account Subscreen --- */
+  if (activeView === 'account') {
+    const previewInitials = getInitials(nameInput || userProfile.name);
+
+    return (
+      <View style={styles.screen}>
+        {/* --- Sub-header --- */}
+        <View style={styles.subHeader}>
+          <TouchableOpacity
+            onPress={() => setActiveView('main')}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Feather name="chevron-left" size={20} color={Colors.primary} />
+            <ThemedText type="label" style={styles.headerTitle}>
+              Account
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* --- Live Profile Preview Card --- */}
+          <View style={styles.profileCard}>
+            <ThemedText type="display" style={styles.initials}>
+              {previewInitials}
+            </ThemedText>
+            <ThemedText type="title" style={styles.name}>
+              {nameInput.trim() || 'Your Name'}
+            </ThemedText>
+            <ThemedText type="caption" color="muted">
+              {universityInput.trim()
+                ? `${universityInput.trim()} · Teaching workspace`
+                : 'Your teaching workspace'}
+            </ThemedText>
+            {gmailInput.trim() ? (
+              <ThemedText type="caption" style={{ color: Colors.primary, marginTop: 2 }}>
+                {gmailInput.trim()}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          {/* --- Editable Form Fields --- */}
+          <View style={styles.formSection}>
+            <View style={styles.fieldGroup}>
+              <ThemedText type="label">Full name</ThemedText>
+              <TextInput
+                value={nameInput}
+                onChangeText={setNameInput}
+                placeholder="Enter your full name"
+                placeholderTextColor={Colors.muted}
+                style={styles.textInput}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <ThemedText type="label">University</ThemedText>
+              <TextInput
+                value={universityInput}
+                onChangeText={setUniversityInput}
+                placeholder="e.g. UT Dallas"
+                placeholderTextColor={Colors.muted}
+                style={styles.textInput}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <ThemedText type="label">Gmail</ThemedText>
+              <TextInput
+                value={gmailInput}
+                onChangeText={setGmailInput}
+                placeholder="you@gmail.com"
+                placeholderTextColor={Colors.muted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* --- Account Actions --- */}
+          <View style={styles.accountActions}>
+            <TouchableOpacity
+              style={styles.primaryActionBtn}
+              activeOpacity={0.8}
+              onPress={handleSaveAccount}
+            >
+              <ThemedText type="label" style={{ color: Colors.primary }}>
+                {savedBanner ? 'Saved ✓' : 'Save changes'}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.signOutBtn}
+              activeOpacity={0.7}
+              onPress={handleSignOut}
+            >
+              <ThemedText type="label" style={styles.signOutText}>
+                Sign out
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   /* --- Daily Brief Subscreen --- */
   if (activeView === 'dailyBrief') {
@@ -316,7 +465,76 @@ export default function SettingsScreen() {
     );
   }
 
+
+  /* --- Notifications Subscreen --- */
+  if (activeView === 'notifications') {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.subHeader}>
+          <TouchableOpacity
+            onPress={() => setActiveView('main')}
+            style={styles.backButton}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Back to settings">
+            <Feather name="chevron-left" size={20} color={Colors.primary} />
+            <ThemedText type="label" style={styles.headerTitle}>
+              Notifications
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}>
+          <ThemedText type="body" color="muted">
+            Choose whether CourseFlow can send you reading reminders and course updates.
+          </ThemedText>
+
+          <View style={styles.interestCard}>
+            <View style={styles.notificationCopy}>
+              <ThemedText type="label">Allow notifications</ThemedText>
+              <ThemedText type="caption" color="muted">
+                Daily brief alerts and new course reads
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.toggleBtn, !notificationsEnabled && styles.toggleBtnOff]}
+              onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={
+                notificationsEnabled ? 'Turn notifications off' : 'Turn notifications on'
+              }>
+              <ThemedText
+                type="label"
+                color={notificationsEnabled ? undefined : 'muted'}
+                style={notificationsEnabled ? { color: Colors.primary } : undefined}>
+                {notificationsEnabled ? 'On' : 'Off'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.primaryActionBtn}
+            activeOpacity={0.8}
+            onPress={() => setActiveView('main')}>
+            <ThemedText type="label" style={{ color: Colors.primary }}>
+              Save preferences
+            </ThemedText>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
   /* --- Main Settings Screen --- */
+  const initials = getInitials(userProfile.name);
+  const workspaceSubtitle = userProfile.university
+    ? `${userProfile.university} · Your teaching workspace`
+    : 'Your teaching workspace';
+
   return (
     <ScrollView
       style={styles.screen}
@@ -326,17 +544,26 @@ export default function SettingsScreen() {
       <ThemedText type="title">Settings</ThemedText>
 
       {/* --- Profile Card --- */}
-      <View style={styles.profileCard}>
+      <TouchableOpacity
+        style={styles.profileCard}
+        activeOpacity={0.85}
+        onPress={openAccount}
+      >
         <ThemedText type="display" style={styles.initials}>
-          HP
+          {initials}
         </ThemedText>
         <ThemedText type="title" style={styles.name}>
-          Harsh Patel
+          {userProfile.name}
         </ThemedText>
         <ThemedText type="caption" color="muted">
-          Your teaching workspace
+          {workspaceSubtitle}
         </ThemedText>
-      </View>
+        {userProfile.gmail ? (
+          <ThemedText type="caption" style={{ color: Colors.primary, marginTop: 2 }}>
+            {userProfile.gmail}
+          </ThemedText>
+        ) : null}
+      </TouchableOpacity>
 
       {/* --- Settings Menu Links --- */}
       <View style={styles.menuList}>
@@ -478,6 +705,26 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     opacity: 1,
   },
+  formSection: {
+    gap: Spacing.lg,
+  },
+  fieldGroup: {
+    gap: Spacing.xs,
+  },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: Colors.ink,
+  },
+  accountActions: {
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
   primaryActionBtn: {
     backgroundColor: '#F2F2FF',
     borderRadius: Radius.md,
@@ -488,6 +735,16 @@ const styles = StyleSheet.create({
   secondaryActionBtn: {
     paddingVertical: 10,
     alignItems: 'center',
+  },
+  signOutBtn: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  signOutText: {
+    color: '#C0392B',
   },
   modalBackdrop: {
     flex: 1,
@@ -517,5 +774,10 @@ const styles = StyleSheet.create({
   },
   prototypeNote: {
     marginTop: Spacing.md,
+  },
+  notificationCopy: {
+    flex: 1,
+    paddingRight: Spacing.md,
+    gap: 2,
   },
 });

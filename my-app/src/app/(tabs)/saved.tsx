@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ShimmerButton } from '@/components/shimmer-button';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
+import { Colors, Layout, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useSaved } from '@/context/SavedContext';
 
 export default function SavedScreen() {
@@ -16,9 +17,6 @@ export default function SavedScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.intro}>
-        <ThemedText type="caption" color="muted">
-          YOUR READING LIST
-        </ThemedText>
         <ThemedText type="display">Saved resources</ThemedText>
         <ThemedText type="body" color="muted">
           Keep useful material close and add it to the course folder where it belongs.
@@ -32,15 +30,14 @@ export default function SavedScreen() {
           <ThemedText type="body" color="muted" style={styles.emptyDescription}>
             Save a resource from Explore to add it to a course folder.
           </ThemedText>
-          <Pressable
-            style={styles.primaryButton}
-            accessibilityRole="button"
+          <ShimmerButton
+            accessibilityLabel="Explore resources"
             onPress={() => router.push('/search')}>
             <ThemedText type="label" style={styles.primaryButtonText}>
               Explore resources
             </ThemedText>
             <Feather name="arrow-right" size={16} color={Colors.white} />
-          </Pressable>
+          </ShimmerButton>
         </View>
       ) : (
         <View style={styles.resourceList}>
@@ -67,6 +64,21 @@ export default function SavedScreen() {
                     Relevant to {resource.courseCode}
                   </ThemedText>
                 </View>
+                {resource.url ? (
+                  <Pressable
+                    style={styles.readLink}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Read ${resource.title}`}
+                    hitSlop={8}
+                    onPress={() => {
+                      Linking.openURL(resource.url as string).catch(() => {});
+                    }}>
+                    <ThemedText type="label" style={styles.relevance}>
+                      Read
+                    </ThemedText>
+                    <Feather name="external-link" size={14} color={Colors.primary} />
+                  </Pressable>
+                ) : null}
                 <Pressable
                   style={[styles.primaryButton, isAssigned && styles.assignedButton]}
                   accessibilityRole="button"
@@ -119,9 +131,12 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: Spacing.xl,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
     backgroundColor: Colors.white,
     gap: Spacing.md,
+    ...Shadow.card,
   },
   emptyDescription: {
     textAlign: 'center',
@@ -131,11 +146,12 @@ const styles = StyleSheet.create({
   },
   resourceCard: {
     padding: Spacing.lg,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     gap: Spacing.sm,
+    ...Shadow.card,
   },
   category: {
     letterSpacing: 0.5,
@@ -152,6 +168,12 @@ const styles = StyleSheet.create({
   },
   relevance: {
     color: Colors.primary,
+  },
+  readLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   primaryButton: {
     minHeight: 44,
