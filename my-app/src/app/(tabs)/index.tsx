@@ -35,10 +35,7 @@ export default function HomeScreen() {
 
         <FadeIn>
           <View style={styles.intro}>
-            <ThemedText type="caption" color="muted">
-              Curated for your classroom
-            </ThemedText>
-            <ThemedText type="display">{'Your daily feed,\ncurated to help you learn.'}</ThemedText>
+            <ThemedText type="display">{'Your feed,\ncurated to help you learn.'}</ThemedText>
           </View>
         </FadeIn>
 
